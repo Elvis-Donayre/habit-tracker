@@ -1,0 +1,8 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { AuthPageWrapper } from '@/components/auth/AuthPageWrapper';
+---
+
+<Layout title="Iniciar Sesión">
+  <AuthPageWrapper client:only="react" />
+</Layout>

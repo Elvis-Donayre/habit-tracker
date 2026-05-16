@@ -1,0 +1,64 @@
+[vite] connected.
+[2m16:55:14[22m [34m[types][39m Generated [2m2ms[22m
+[42m[1m astro [22m[49m [32mv6.3.1[39m [2mready in[22m 2463 [2mms[22m
+[2m┃[22m Local    [36mhttp://localhost:4321/[39m
+[2m┃[22m Network  [36mhttp://192.168.1.38:4321/[39m
+[2m16:55:14[22m [32mwatching for file changes...[39m
+[2m16:57:31[22m [34m[200][39m / [2m63ms[22m
+[2m16:58:54[22m [34m[200][39m / [2m4ms[22m
+[2m16:58:57[22m [34m[200][39m /login [2m19ms[22m
+[2m17:00:38[22m [34m[200][39m /login [2m5ms[22m
+[2m17:00:40[22m [34m[watch][39m /src/styles/global.css
+[2m17:00:41[22m [34m[200][39m /login [2m11ms[22m
+[2m17:00:49[22m [34m[200][39m /login [2m3ms[22m
+[2m17:00:49[22m [34m[200][39m /login [2m3ms[22m
+[2m17:00:50[22m [34m[200][39m /login [2m3ms[22m
+[2m17:00:51[22m [34m[200][39m /login [2m4ms[22m
+[2m17:01:04[22m [34m[200][39m /login [2m4ms[22m
+[2m17:01:43[22m [34m[200][39m /login [2m4ms[22m
+[2m17:02:15[22m [34m[200][39m /login [2m2ms[22m
+[2m17:02:21[22m [34m[200][39m /login [2m3ms[22m
+[2m17:03:28[22m [34m[200][39m / [2m3ms[22m
+[2m17:18:39[22m [34m[200][39m / [2m4ms[22m
+[2m17:18:40[22m [34m[200][39m /login [2m3ms[22m
+[2m17:29:49[22m [34m[200][39m / [2m10ms[22m
+[2m17:29:51[22m [34m[200][39m /login [2m3ms[22m
+[2m17:30:29[22m [34m[watch][39m /src/styles/global.css
+[2m17:30:29[22m [34m[200][39m /login [2m33ms[22m
+[2m17:30:29[22m [34m[200][39m /login [2m6ms[22m
+[2m17:30:29[22m [33m[404][39m /@id/@/components/auth/AuthPageWrapper [2m7ms[22m
+[2m17:30:29[22m [33m[404][39m /@id/@/components/auth/AuthPageWrapper [2m1ms[22m
+[2m17:30:31[22m [33m[404][39m /@id/@/components/auth/AuthPageWrapper [2m0ms[22m
+[2m17:30:31[22m [33m[404][39m /@id/@/components/auth/AuthPageWrapper [2m1ms[22m
+[2m17:30:42[22m [34m[200][39m /login [2m9ms[22m
+[2m17:30:52[22m [34m[200][39m /dashboard [2m22ms[22m
+[2m17:30:55[22m [34m[200][39m /habits [2m13ms[22m
+[2m17:30:57[22m [34m[200][39m /habits [2m4ms[22m
+[2m17:30:57[22m [34m[200][39m /dashboard [2m2ms[22m
+[2m17:30:58[22m [34m[200][39m /habits [2m3ms[22m
+[2m17:30:58[22m [34m[200][39m /activities [2m13ms[22m
+[2m17:30:59[22m [34m[200][39m /sessions [2m12ms[22m
+[2m17:31:00[22m [34m[200][39m /activities [2m2ms[22m
+[2m17:31:00[22m [34m[200][39m /dashboard [2m2ms[22m
+[2m17:31:01[22m [34m[200][39m /habits [2m3ms[22m
+[2m17:31:02[22m [34m[200][39m /activities [2m2ms[22m
+[2m17:31:03[22m [34m[200][39m /sessions [2m2ms[22m
+[2m17:31:04[22m [34m[200][39m /activities [2m2ms[22m
+[2m17:31:05[22m [34m[200][39m /dashboard [2m2ms[22m
+[2m17:31:05[22m [34m[200][39m /habits [2m2ms[22m
+[2m17:32:42[22m [34m[200][39m /habits [2m2ms[22m
+[2m17:32:55[22m [34m[watch][39m /src/styles/global.css
+[2m17:32:55[22m [34m[200][39m /login [2m4ms[22m
+[2m17:32:56[22m [34m[watch][39m /src/styles/global.css
+[2m17:32:56[22m [34m[200][39m /habits [2m23ms[22m
+[2m17:32:57[22m [34m[watch][39m /src/styles/global.css
+[2m17:32:57[22m [34m[200][39m /habits [2m10ms[22m
+[2m17:32:58[22m [34m[watch][39m /src/styles/global.css
+[2m17:32:58[22m [34m[200][39m /habits [2m4ms[22m
+[2m17:35:43[22m [34m[200][39m /dashboard [2m23ms[22m
+[2m17:35:59[22m [34m[200][39m / [2m3ms[22m
+[2m17:36:00[22m [34m[200][39m /dashboard [2m5ms[22m
+[2m17:36:16[22m [34m[200][39m /dashboard [2m3ms[22m
+[2m17:36:20[22m [34m[200][39m /dashboard [2m3ms[22m
+
+C:\Users\Usuario\Documents\Proyectos Python\habit-tracker-web>
