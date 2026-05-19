@@ -5,7 +5,8 @@
       "Bash(npx tsc *)",
       "Bash(pnpm exec *)",
       "Bash(pnpm list *)",
-      "Bash(node_modules\\\\.bin\\\\tsc --noEmit)"
+      "Bash(node_modules\\\\.bin\\\\tsc --noEmit)",
+      "Bash(pnpm build *)"
     ]
   }
 }

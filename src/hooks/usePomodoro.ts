@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase';
+import { useVibration } from './useVibration';
 
 export type PomodoroPhase = 'idle' | 'work' | 'short_break' | 'long_break';
 
@@ -67,6 +68,7 @@ interface PendingSession {
 export function usePomodoro(userId: string | undefined) {
   const supabase = createClient();
   const qc = useQueryClient();
+  const { vibrate } = useVibration();
 
   const [settings, setSettingsState] = useState<PomodoroSettings>(DEFAULT_SETTINGS);
   const [phase, setPhase] = useState<PomodoroPhase>('idle');
@@ -77,8 +79,12 @@ export function usePomodoro(userId: string | undefined) {
   const [sessionStartTime, setSessionStartTime] = useState<string>('');
   const [totalFocusMinutes, setTotalFocusMinutes] = useState(0);
   const [pendingSession, setPendingSession] = useState<PendingSession | null>(null);
+  // Incremented each time the timer (re)starts so the tick effect re-runs and recalculates the deadline
+  const [timerEpoch, setTimerEpoch] = useState(0);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const deadlineRef = useRef<number>(0);
+  const wakeLockRef = useRef<any>(null);
 
   // Refs so completion logic always reads fresh state without extra effect deps
   const phaseRef = useRef(phase);
@@ -93,19 +99,59 @@ export function usePomodoro(userId: string | undefined) {
   sessionStartTimeRef.current = sessionStartTime;
   const userIdRef = useRef(userId);
   userIdRef.current = userId;
+  const secondsLeftRef = useRef(secondsLeft);
+  secondsLeftRef.current = secondsLeft;
+  const isRunningRef = useRef(isRunning);
+  isRunningRef.current = isRunning;
 
   useEffect(() => {
     setSettingsState(loadSettings());
   }, []);
 
-  // Timer tick — only runs while isRunning
+  // Timer tick — derives remaining time from a Date.now() deadline so browser
+  // throttling or screen-off never causes the displayed time to drift.
   useEffect(() => {
     if (!isRunning) return;
+    deadlineRef.current = Date.now() + secondsLeftRef.current * 1000;
     const id = setInterval(() => {
-      setSecondsLeft(prev => Math.max(0, prev - 1));
-    }, 1000);
+      const remaining = Math.max(0, Math.ceil((deadlineRef.current - Date.now()) / 1000));
+      setSecondsLeft(remaining);
+    }, 250);
     return () => clearInterval(id);
-  }, [isRunning]);
+  }, [isRunning, timerEpoch]);
+
+  const acquireWakeLock = useCallback(async () => {
+    if (!('wakeLock' in navigator)) return;
+    try {
+      wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+    } catch {}
+  }, []);
+
+  const releaseWakeLock = useCallback(async () => {
+    try {
+      await wakeLockRef.current?.release();
+      wakeLockRef.current = null;
+    } catch {}
+  }, []);
+
+  // Acquire screen Wake Lock while timer is running; release on pause/stop/unmount
+  useEffect(() => {
+    if (!isRunning) return;
+    acquireWakeLock();
+    return () => { releaseWakeLock(); };
+  }, [isRunning, acquireWakeLock, releaseWakeLock]);
+
+  // Re-acquire Wake Lock when the tab regains visibility (browser releases it on hide)
+  useEffect(() => {
+    if (!isRunning) return;
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && !wakeLockRef.current) {
+        acquireWakeLock();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [isRunning, acquireWakeLock]);
 
   const playSound = useCallback(() => {
     if (!settingsRef.current.soundEnabled) return;
@@ -158,6 +204,7 @@ export function usePomodoro(userId: string | undefined) {
   const handleCompletionRef = useRef<() => void>(() => {});
   handleCompletionRef.current = () => {
     playSound();
+    vibrate([300, 100, 300, 100, 500]);
     const currentPhase = phaseRef.current;
     const s = settingsRef.current;
     const currentCycles = cycleCountRef.current;
@@ -178,6 +225,7 @@ export function usePomodoro(userId: string | undefined) {
       if (s.autoStartBreak) {
         setPhase(next);
         setSecondsLeft(getPhaseSeconds(next, s));
+        setTimerEpoch(e => e + 1);
         setIsRunning(true);
         setSessionStartTime('');
       } else {
@@ -206,6 +254,7 @@ export function usePomodoro(userId: string | undefined) {
       setSecondsLeft(secs);
       setSessionStartTime(new Date().toISOString());
     }
+    setTimerEpoch(e => e + 1);
     setIsRunning(true);
   }, [phase, selectedActivityId]);
 
