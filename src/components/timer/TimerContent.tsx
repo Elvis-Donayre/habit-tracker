@@ -80,8 +80,8 @@ export function TimerContent() {
               </span>
             </div>
 
-            <div className="relative inline-block mb-8">
-              <svg width="300" height="300" className="transform -rotate-90">
+            <div className="relative w-[200px] h-[200px] sm:w-[280px] sm:h-[280px] mx-auto mb-6">
+              <svg viewBox="0 0 300 300" className="w-full h-full transform -rotate-90">
                 <circle
                   cx="150"
                   cy="150"
@@ -133,14 +133,14 @@ export function TimerContent() {
               )}
               <button
                 onClick={pomodoro.reset}
-                className="w-10 h-10 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center hover-surface transition-colors"
+                className="w-12 h-12 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center hover-surface transition-colors"
               >
                 <RotateCcw size={16} className="text-[var(--color-text-muted)]" />
               </button>
               {(pomodoro.phase === 'work' || pomodoro.phase === 'short_break' || pomodoro.phase === 'long_break') && (
                 <button
                   onClick={pomodoro.skip}
-                  className="w-10 h-10 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center hover-surface transition-colors"
+                  className="w-12 h-12 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center hover-surface transition-colors"
                 >
                   <SkipForward size={16} className="text-[var(--color-text-muted)]" />
                 </button>
@@ -186,7 +186,7 @@ export function TimerContent() {
                   <button
                     key={activity.id}
                     onClick={() => pomodoro.selectActivity(activity.id)}
-                    className={`w-full text-left px-3 py-2 rounded-[var(--radius-md)] text-sm transition-colors ${
+                    className={`w-full text-left px-3 py-3 rounded-[var(--radius-md)] text-sm transition-colors ${
                       pomodoro.selectedActivityId === activity.id
                         ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent)] font-medium border border-[var(--color-accent)]/20'
                         : 'hover-surface border border-transparent'
@@ -205,7 +205,7 @@ export function TimerContent() {
               {Array.from({ length: pomodoro.settings.totalCycles }).map((_, i) => (
                 <div
                   key={i}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold ${
                     i < pomodoro.cycleCount
                       ? 'bg-[var(--color-accent)] text-white'
                       : i === pomodoro.cycleCount
@@ -333,7 +333,7 @@ function SessionNotesForm({
             <button
               key={value}
               onClick={() => setMood(value)}
-              className={`flex-1 py-2 text-sm rounded-[var(--radius-md)] transition-all duration-150 ${
+              className={`flex-1 py-3 text-sm rounded-[var(--radius-md)] transition-all duration-150 ${
                 mood === value
                   ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent)] border-2 border-[var(--color-accent)] font-medium scale-105'
                   : 'bg-[var(--color-surface-raised)] border border-[var(--color-border)] hover-surface'
@@ -352,7 +352,7 @@ function SessionNotesForm({
             <button
               key={value}
               onClick={() => setProductivity(value)}
-              className={`flex-1 py-2 text-sm rounded-[var(--radius-md)] transition-all duration-150 ${
+              className={`flex-1 py-3 text-sm rounded-[var(--radius-md)] transition-all duration-150 ${
                 productivity === value
                   ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent)] border-2 border-[var(--color-accent)] font-medium scale-105'
                   : 'bg-[var(--color-surface-raised)] border border-[var(--color-border)] hover-surface'
@@ -366,7 +366,7 @@ function SessionNotesForm({
       <div className="flex gap-2">
         <button
           onClick={() => onSubmit({ sessionId, notes, mood, productivity, bookTitle: bookTitle.trim() || undefined })}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-white rounded-[var(--radius-md)] transition-all duration-150 active:scale-[0.97]"
+          className="flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-medium text-white rounded-[var(--radius-md)] transition-all duration-150 active:scale-[0.97]"
           style={{ backgroundColor: 'var(--color-accent)' }}
         >
           <CheckCircle size={16} />
@@ -374,7 +374,7 @@ function SessionNotesForm({
         </button>
         <button
           onClick={onCancel}
-          className="px-4 py-2.5 text-sm font-medium rounded-[var(--radius-md)] border border-[var(--color-border)] hover-surface transition-colors"
+          className="px-4 py-3.5 text-sm font-medium rounded-[var(--radius-md)] border border-[var(--color-border)] hover-surface transition-colors"
         >
           Omitir
         </button>

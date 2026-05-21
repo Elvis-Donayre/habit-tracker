@@ -250,7 +250,7 @@ function HabitList({ userId, habits }: { userId: string; habits: ReturnType<type
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
+            className={`px-3 py-2.5 text-xs font-medium rounded-full transition-colors ${
               filter === f
                 ? 'bg-[var(--color-accent)] text-white'
                 : 'bg-gray-100 dark:bg-gray-800 text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
@@ -331,7 +331,7 @@ function HabitList({ userId, habits }: { userId: string; habits: ReturnType<type
               <div className="flex sm:flex-col gap-2 shrink-0">
                 <button
                   onClick={() => setEditingId(isEditing ? null : habit.id)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--color-border)] dark:border-[var(--color-border-dark)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium rounded-lg border border-[var(--color-border)] dark:border-[var(--color-border-dark)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                 >
                   <Edit2 size={14} />
                   Editar
@@ -343,7 +343,7 @@ function HabitList({ userId, habits }: { userId: string; habits: ReturnType<type
                       updates: { is_active: !habit.is_active },
                     })
                   }
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--color-border)] dark:border-[var(--color-border-dark)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium rounded-lg border border-[var(--color-border)] dark:border-[var(--color-border-dark)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                 >
                   {habit.is_active ? <Pause size={14} /> : <Play size={14} />}
                   {habit.is_active ? 'Pausar' : 'Activar'}
@@ -380,13 +380,13 @@ function HabitList({ userId, habits }: { userId: string; habits: ReturnType<type
                       habits.remove.mutate(habit.id);
                       setConfirmDeleteId(null);
                     }}
-                    className="px-3 py-1.5 text-xs font-medium bg-red-600 text-white rounded-lg hover:bg-red-700"
+                    className="px-3 py-2.5 text-xs font-medium bg-red-600 text-white rounded-lg hover:bg-red-700"
                   >
                     Sí, eliminar
                   </button>
                   <button
                     onClick={() => setConfirmDeleteId(null)}
-                    className="px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--color-border)] hover:bg-black/5"
+                    className="px-3 py-2.5 text-xs font-medium rounded-lg border border-[var(--color-border)] hover:bg-black/5"
                   >
                     Cancelar
                   </button>

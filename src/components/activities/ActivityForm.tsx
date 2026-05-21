@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useActivities } from '@/hooks/useActivities';
+import { useHabits } from '@/hooks/useHabits';
 import { Button } from '@/components/ui/Button';
 import type { Activity } from '@/types';
 
@@ -19,6 +20,8 @@ const labelClass =
 
 export function ActivityForm({ userId, activity, onSubmitted, onCancel }: Props) {
   const activities = useActivities(userId);
+  const habits = useHabits(userId);
+  const habitList = (habits.list.data ?? []).filter((h) => h.is_active);
 
   const [nombre, setNombre] = useState(activity?.name ?? '');
   const [descripcion, setDescripcion] = useState(activity?.description ?? '');
@@ -26,10 +29,11 @@ export function ActivityForm({ userId, activity, onSubmitted, onCancel }: Props)
   const [maxSesiones, setMaxSesiones] = useState(activity?.maximo_sesiones_diarias?.toString() ?? '');
   const [valorObjetivo, setValorObjetivo] = useState(activity?.valor_objetivo?.toString() ?? '');
   const [unidadObjetivo, setUnidadObjetivo] = useState(activity?.valor_objetivo_unidad ?? '');
+  const [selectedHabitId, setSelectedHabitId] = useState('');
   const [formError, setFormError] = useState('');
 
   const isEditing = !!activity;
-  const isPending = activities.create.isPending || activities.update.isPending;
+  const isPending = activities.create.isPending || activities.update.isPending || activities.linkToHabit.isPending;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +43,16 @@ export function ActivityForm({ userId, activity, onSubmitted, onCancel }: Props)
       setFormError('El nombre es requerido');
       return;
     }
+    const maxSesNum = maxSesiones !== '' ? Number(maxSesiones) : undefined;
+    if (maxSesNum !== undefined && (isNaN(maxSesNum) || maxSesNum < 1 || maxSesNum > 24)) {
+      setFormError('Máx. sesiones/día debe ser un número entre 1 y 24');
+      return;
+    }
+    const valObjetivoNum = valorObjetivo !== '' ? Number(valorObjetivo) : undefined;
+    if (valObjetivoNum !== undefined && (isNaN(valObjetivoNum) || valObjetivoNum < 0)) {
+      setFormError('El valor objetivo debe ser un número mayor o igual a 0');
+      return;
+    }
     if (!userId) return;
 
     const payload = {
@@ -46,26 +60,44 @@ export function ActivityForm({ userId, activity, onSubmitted, onCancel }: Props)
       name: nombre.trim(),
       description: descripcion.trim() || undefined,
       tipo: tipo || undefined,
-      maximo_sesiones_diarias: maxSesiones ? Number(maxSesiones) : undefined,
-      valor_objetivo: valorObjetivo ? Number(valorObjetivo) : undefined,
+      maximo_sesiones_diarias: maxSesNum,
+      valor_objetivo: valObjetivoNum,
       valor_objetivo_unidad: unidadObjetivo.trim() || undefined,
+    };
+
+    const handleError = (err: unknown) => {
+      if (err instanceof Error) {
+        setFormError(err.message);
+      } else if (err && typeof err === 'object' && 'message' in err) {
+        setFormError(String((err as { message: unknown }).message));
+      } else {
+        setFormError('Error al guardar la actividad. Intenta de nuevo.');
+      }
     };
 
     if (isEditing) {
       activities.update.mutate(
         { id: activity.id, ...payload },
-        { onSuccess: onSubmitted, onError: (err) => setFormError(String(err)) }
+        { onSuccess: onSubmitted, onError: handleError }
       );
     } else {
-      activities.create.mutate(payload as Omit<Activity, 'id' | 'created_at' | 'updated_at'>, {
-        onSuccess: onSubmitted,
-        onError: (err) => setFormError(String(err)),
-      });
+      activities.create.mutateAsync(payload as Omit<Activity, 'id' | 'created_at' | 'updated_at'>)
+        .then(async (newActivity) => {
+          if (selectedHabitId && newActivity?.id) {
+            await activities.linkToHabit.mutateAsync({
+              habitId: selectedHabitId,
+              activityId: newActivity.id,
+              weight: 1.0,
+            });
+          }
+          onSubmitted();
+        })
+        .catch(handleError);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className={labelClass}>Nombre *</label>
@@ -114,8 +146,7 @@ export function ActivityForm({ userId, activity, onSubmitted, onCancel }: Props)
             onChange={(e) => setMaxSesiones(e.target.value)}
             placeholder="Ej: 2"
             className={inputClass}
-            min={1}
-            max={24}
+            inputMode="numeric"
           />
         </div>
         <div>
@@ -126,7 +157,7 @@ export function ActivityForm({ userId, activity, onSubmitted, onCancel }: Props)
             onChange={(e) => setValorObjetivo(e.target.value)}
             placeholder="Ej: 100"
             className={inputClass}
-            min={0}
+            inputMode="decimal"
           />
         </div>
         <div>
@@ -141,6 +172,27 @@ export function ActivityForm({ userId, activity, onSubmitted, onCancel }: Props)
           />
         </div>
       </div>
+
+      {!isEditing && habitList.length > 0 && (
+        <div>
+          <label className={labelClass}>Vincular a hábito (opcional)</label>
+          <select
+            value={selectedHabitId}
+            onChange={(e) => setSelectedHabitId(e.target.value)}
+            className={inputClass}
+          >
+            <option value="">Sin vincular</option>
+            {habitList.map((h) => (
+              <option key={h.id} value={h.id}>{h.name}</option>
+            ))}
+          </select>
+          {selectedHabitId && (
+            <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
+              La actividad contribuirá al progreso de este hábito.
+            </p>
+          )}
+        </div>
+      )}
 
       {formError && (
         <p className="text-xs text-[var(--color-danger)]">{formError}</p>

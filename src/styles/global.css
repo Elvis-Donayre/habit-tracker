@@ -449,6 +449,11 @@ textarea::placeholder {
   background: var(--color-text-muted);
 }
 
+/* Safe-area padding for Android/iOS home gesture bar */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 /* EDITMODE live-tweak overrides */
 :root {
   --ocd-tweak-accent-color: #2D5BFF;

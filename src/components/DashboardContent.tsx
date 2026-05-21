@@ -162,7 +162,7 @@ export function DashboardContent() {
               const medal = ['🥇', '🥈', '🥉'][index];
 
               return (
-                <div key={activity.actividad_nombre} className="space-y-1.5">
+                <div key={activity.actividad_nombre ?? String(index)} className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-base">{medal}</span>
@@ -264,7 +264,7 @@ export function DashboardContent() {
                   const barColor = getBarColor(percentage);
 
                   return (
-                    <Card key={`${item.actividad_nombre}-${index}`} interactive className="p-4">
+                    <Card key={`${item.actividad_nombre}-${index}`} variant="interactive" className="p-4">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <h3 className="text-sm font-semibold truncate">{item.actividad_nombre}</h3>
@@ -276,7 +276,7 @@ export function DashboardContent() {
                           <span className="text-sm font-bold" style={{ color: barColor }}>
                             {categorization.icon} {percentage}%
                           </span>
-                          <div className="w-24 bg-[var(--color-border)] rounded-[var(--radius-full)] h-2 overflow-hidden">
+                          <div className="flex-1 bg-[var(--color-border)] rounded-[var(--radius-full)] h-2 overflow-hidden">
                             <div
                               className="h-full rounded-[var(--radius-full)] transition-all duration-500"
                               style={{ width: `${Math.min(percentage, 100)}%`, backgroundColor: barColor }}
@@ -297,7 +297,7 @@ export function DashboardContent() {
               <div className="space-y-3 stagger-enter">
                 {weeklyData.length > 0 ? (
                   weeklyData.map((item, index) => (
-                    <Card key={`${item.actividad_nombre}-${index}`} interactive className="p-4">
+                    <Card key={`${item.actividad_nombre}-${index}`} variant="interactive" className="p-4">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <h3 className="text-sm font-semibold truncate">{item.actividad_nombre}</h3>

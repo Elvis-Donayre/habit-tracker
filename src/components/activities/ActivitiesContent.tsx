@@ -246,14 +246,14 @@ export function ActivitiesContent() {
                         setShowForm(true);
                         setEditingId(activity.id);
                       }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--color-border)] hover-surface transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium rounded-lg border border-[var(--color-border)] hover-surface transition-colors"
                     >
                       <Edit3 size={14} />
                       Editar
                     </button>
                     <button
                       onClick={() => setConfirmDeleteId(activity.id)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--color-danger)]/30 text-[var(--color-danger)] hover-surface transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium rounded-lg border border-[var(--color-danger)]/30 text-[var(--color-danger)] hover-surface transition-colors"
                     >
                       <Trash2 size={14} />
                       Eliminar
@@ -271,13 +271,13 @@ export function ActivitiesContent() {
                         activities.remove.mutate(activity.id);
                         setConfirmDeleteId(null);
                       }}
-                      className="btn-danger px-3 py-1.5 text-xs font-medium rounded-lg"
+                      className="btn-danger px-3 py-2.5 text-xs font-medium rounded-lg"
                     >
                       Sí, eliminar
                     </button>
                     <button
                       onClick={() => setConfirmDeleteId(null)}
-                      className="px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--color-border)] hover-surface"
+                      className="px-3 py-2.5 text-xs font-medium rounded-lg border border-[var(--color-border)] hover-surface"
                     >
                       Cancelar
                     </button>
