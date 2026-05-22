@@ -5,8 +5,8 @@ import { usePomodoro, type PomodoroSettings, type PomodoroPhase } from '@/hooks/
 import { Card } from '@/components/ui/Card';
 import { formatDuration, getMoodEmoji, getProductivityBars } from '@/lib/helpers';
 import {
-  Timer, Play, Pause, RotateCcw, SkipForward, Settings, Volume2, VolumeX,
-  ChevronDown, ChevronUp, CheckCircle, Clock, Zap,
+  Timer, Play, Pause, RotateCcw, SkipForward, Settings,
+  ChevronDown, ChevronUp, CheckCircle, Clock, Zap, Infinity, StopCircle,
 } from 'lucide-react';
 
 const PHASE_COLORS: Record<PomodoroPhase, string> = {
@@ -22,6 +22,8 @@ const PHASE_LABELS: Record<PomodoroPhase, string> = {
   short_break: 'Descanso corto',
   long_break: 'Descanso largo',
 };
+
+const INFINITE_PHASE_LABEL = 'Concentración profunda';
 
 const moodLabels: Record<number, string> = {
   1: '😢 Mal',
@@ -41,7 +43,11 @@ export function TimerContent() {
   const [showSettings, setShowSettings] = useState(false);
 
   const selectedActivity = activityList.find((a) => a.id === pomodoro.selectedActivityId);
-  const phaseColor = PHASE_COLORS[pomodoro.phase];
+  const isInfinite = pomodoro.settings.timerMode === 'infinite';
+  const phaseColor = isInfinite ? 'var(--color-accent)' : PHASE_COLORS[pomodoro.phase];
+  const phaseLabel = isInfinite && pomodoro.phase === 'work'
+    ? INFINITE_PHASE_LABEL
+    : PHASE_LABELS[pomodoro.phase];
 
   const circumference = 2 * Math.PI * 140;
   const strokeDashoffset = circumference - (pomodoro.progress / 100) * circumference;
@@ -49,8 +55,10 @@ export function TimerContent() {
   return (
     <div className="space-y-6 page-enter">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <Timer size={24} className="text-[var(--color-accent)]" />
+        <h1 className="text-[1.65rem] font-bold tracking-tight flex items-center gap-2.5">
+          <span className="w-9 h-9 rounded-[var(--radius-md)] bg-[var(--color-accent-soft)] flex items-center justify-center shrink-0">
+            <Timer size={18} className="text-[var(--color-accent)]" />
+          </span>
           Temporizador
         </h1>
         <button
@@ -72,101 +80,143 @@ export function TimerContent() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <Card className="p-8 text-center">
-            <div className="flex items-center justify-center gap-2 mb-6">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: phaseColor }} />
-              <span className="text-sm font-semibold uppercase tracking-wider" style={{ color: phaseColor }}>
-                {PHASE_LABELS[pomodoro.phase]}
-              </span>
-            </div>
+          <Card className="p-6 sm:p-8">
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-full p-1 mb-5">
+                <button
+                  onClick={() => pomodoro.updateSettings({ timerMode: 'pomodoro' })}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-150 ${
+                    !isInfinite
+                      ? 'bg-[var(--color-accent)] text-white'
+                      : 'text-[var(--color-text-muted)] hover-surface'
+                  }`}
+                >
+                  Pomodoro
+                </button>
+                <button
+                  onClick={() => pomodoro.updateSettings({ timerMode: 'infinite' })}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-150 flex items-center gap-1.5 ${
+                    isInfinite
+                      ? 'bg-[var(--color-accent)] text-white'
+                      : 'text-[var(--color-text-muted)] hover-surface'
+                  }`}
+                >
+                  <Infinity size={12} />
+                  Foco profundo
+                </button>
+              </div>
 
-            <div className="relative w-[200px] h-[200px] sm:w-[280px] sm:h-[280px] mx-auto mb-6">
-              <svg viewBox="0 0 300 300" className="w-full h-full transform -rotate-90">
-                <circle
-                  cx="150"
-                  cy="150"
-                  r="140"
-                  stroke="var(--color-border)"
-                  strokeWidth="8"
-                  fill="none"
-                />
-                <circle
-                  cx="150"
-                  cy="150"
-                  r="140"
-                  stroke={phaseColor}
-                  strokeWidth="8"
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={strokeDashoffset}
-                  className="transition-all duration-1000 ease-linear"
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-5xl font-bold tabular-nums tracking-tight">
-                  {pomodoro.displayTime}
-                </span>
-                <span className="text-sm text-[var(--color-text-muted)] mt-1">
-                  Ciclo {pomodoro.cycleCount + 1}
+              <div className="flex items-center gap-2 mb-6">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: phaseColor }} />
+                <span className="text-sm font-semibold uppercase tracking-wider" style={{ color: phaseColor }}>
+                  {phaseLabel}
                 </span>
               </div>
-            </div>
 
-            <div className="flex items-center justify-center gap-3 mb-6">
-              {pomodoro.isRunning ? (
-                <button
-                  onClick={pomodoro.pause}
-                  className="w-12 h-12 rounded-full bg-[var(--color-surface)] border-2 border-[var(--color-border)] flex items-center justify-center hover-surface transition-colors"
-                >
-                  <Pause size={20} className="text-[var(--color-text)]" />
-                </button>
-              ) : (
-                <button
-                  onClick={pomodoro.start}
-                  disabled={!pomodoro.selectedActivityId}
-                  className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-150 active:scale-95 disabled:opacity-50"
-                  style={{ backgroundColor: phaseColor }}
-                >
-                  <Play size={24} className="text-white ml-1" />
-                </button>
-              )}
-              <button
-                onClick={pomodoro.reset}
-                className="w-12 h-12 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center hover-surface transition-colors"
-              >
-                <RotateCcw size={16} className="text-[var(--color-text-muted)]" />
-              </button>
-              {(pomodoro.phase === 'work' || pomodoro.phase === 'short_break' || pomodoro.phase === 'long_break') && (
-                <button
-                  onClick={pomodoro.skip}
-                  className="w-12 h-12 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center hover-surface transition-colors"
-                >
-                  <SkipForward size={16} className="text-[var(--color-text-muted)]" />
-                </button>
-              )}
-            </div>
-
-            {pomodoro.selectedActivityId && selectedActivity && (
-              <div className="flex items-center justify-center gap-2 text-sm text-[var(--color-text-muted)]">
-                <Zap size={14} className="text-[var(--color-accent)]" />
-                <span>{selectedActivity.name}</span>
-              </div>
-            )}
-
-            {pomodoro.sessionCompleted && pomodoro.completedSessionId && (
-              <div className="mt-6 space-y-4">
-                <div className="alert-success flex items-center gap-2 justify-center">
-                  <CheckCircle size={16} />
-                  <span className="text-sm font-medium">¡Sesión completada! Registra tus notas</span>
+              <div className="relative w-[200px] h-[200px] sm:w-[280px] sm:h-[280px] mb-6">
+                <svg viewBox="0 0 300 300" className="w-full h-full transform -rotate-90">
+                  <circle
+                    cx="150"
+                    cy="150"
+                    r="140"
+                    stroke="var(--color-border)"
+                    strokeWidth="8"
+                    fill="none"
+                  />
+                  <circle
+                    cx="150"
+                    cy="150"
+                    r="140"
+                    stroke={phaseColor}
+                    strokeWidth="8"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    className="transition-all duration-1000 ease-linear"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-5xl font-bold tabular-nums tracking-tight">
+                    {pomodoro.displayTime}
+                  </span>
+                  <span className="text-sm text-[var(--color-text-muted)] mt-1">
+                    {isInfinite ? (pomodoro.phase === 'work' ? 'En sesión' : 'Listo') : `Ciclo ${pomodoro.cycleCount + 1}`}
+                  </span>
                 </div>
-                <SessionNotesForm
-                  sessionId={pomodoro.completedSessionId}
-                  onSubmit={pomodoro.submitNotes}
-                  onCancel={pomodoro.skipNotes}
-                />
               </div>
-            )}
+
+              <div className="flex items-center gap-3 mb-4">
+                {pomodoro.isRunning ? (
+                  <button
+                    onClick={pomodoro.pause}
+                    className="w-12 h-12 rounded-full bg-[var(--color-surface)] border-2 border-[var(--color-border)] flex items-center justify-center hover-surface transition-colors"
+                  >
+                    <Pause size={20} className="text-[var(--color-text)]" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={pomodoro.start}
+                    disabled={!pomodoro.selectedActivityId}
+                    className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-150 active:scale-95 disabled:opacity-50"
+                    style={{ backgroundColor: phaseColor }}
+                  >
+                    <Play size={24} className="text-white ml-1" />
+                  </button>
+                )}
+                <button
+                  onClick={pomodoro.reset}
+                  className="w-12 h-12 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center hover-surface transition-colors"
+                  title={isInfinite ? 'Descartar sesión' : 'Reiniciar'}
+                >
+                  <RotateCcw size={16} className="text-[var(--color-text-muted)]" />
+                </button>
+                {!isInfinite && (pomodoro.phase === 'work' || pomodoro.phase === 'short_break' || pomodoro.phase === 'long_break') && (
+                  <button
+                    onClick={pomodoro.skip}
+                    className="w-12 h-12 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center hover-surface transition-colors"
+                  >
+                    <SkipForward size={16} className="text-[var(--color-text-muted)]" />
+                  </button>
+                )}
+                {isInfinite && pomodoro.phase === 'work' && (
+                  <button
+                    onClick={pomodoro.finishInfinite}
+                    className="w-12 h-12 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center hover-surface transition-colors"
+                    title="Finalizar y guardar sesión"
+                  >
+                    <StopCircle size={16} className="text-[var(--color-danger)]" />
+                  </button>
+                )}
+              </div>
+
+              {pomodoro.selectedActivityId && selectedActivity && (
+                <div className="flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
+                  <Zap size={14} className="text-[var(--color-accent)]" />
+                  <span>{selectedActivity.name}</span>
+                </div>
+              )}
+
+              {!pomodoro.selectedActivityId && (
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  Selecciona una actividad para empezar
+                </p>
+              )}
+
+              {pomodoro.sessionCompleted && pomodoro.completedSessionId && (
+                <div className="w-full mt-6 space-y-4">
+                  <div className="alert-success flex items-center gap-2 justify-center">
+                    <CheckCircle size={16} />
+                    <span className="text-sm font-medium">¡Sesión completada! Registra tus notas</span>
+                  </div>
+                  <SessionNotesForm
+                    sessionId={pomodoro.completedSessionId}
+                    onSubmit={pomodoro.submitNotes}
+                    onCancel={pomodoro.skipNotes}
+                  />
+                </div>
+              )}
+            </div>
           </Card>
         </div>
 
@@ -199,28 +249,43 @@ export function TimerContent() {
             </div>
           </Card>
 
-          <Card className="p-4">
-            <h3 className="text-sm font-semibold mb-3">Ciclos hoy</h3>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {Array.from({ length: pomodoro.settings.totalCycles }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold ${
-                    i < pomodoro.cycleCount
-                      ? 'bg-[var(--color-accent)] text-white'
-                      : i === pomodoro.cycleCount
-                      ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent)] border-2 border-[var(--color-accent)]'
-                      : 'bg-[var(--color-border)] text-[var(--color-text-muted)]'
-                  }`}
-                >
-                  {i + 1}
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-[var(--color-text-muted)] mt-2">
-              {pomodoro.cycleCount} de {pomodoro.settings.totalCycles} completados
-            </p>
-          </Card>
+          {!isInfinite && (
+            <Card className="p-4">
+              <h3 className="text-sm font-semibold mb-3">Ciclos hoy</h3>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {Array.from({ length: pomodoro.settings.totalCycles }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold ${
+                      i < pomodoro.cycleCount
+                        ? 'bg-[var(--color-accent)] text-white'
+                        : i === pomodoro.cycleCount
+                        ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent)] border-2 border-[var(--color-accent)]'
+                        : 'bg-[var(--color-border)] text-[var(--color-text-muted)]'
+                    }`}
+                  >
+                    {i + 1}
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-[var(--color-text-muted)] mt-2">
+                {pomodoro.cycleCount} de {pomodoro.settings.totalCycles} completados
+              </p>
+            </Card>
+          )}
+
+          {isInfinite && pomodoro.phase === 'work' && (
+            <Card className="p-4">
+              <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                <Infinity size={14} className="text-[var(--color-accent)]" />
+                Tiempo en sesión
+              </h3>
+              <p className="text-2xl font-bold tabular-nums text-[var(--color-accent)]">
+                {pomodoro.displayTime}
+              </p>
+              <p className="text-xs text-[var(--color-text-muted)] mt-1">Sesión activa</p>
+            </Card>
+          )}
 
           {pomodoro.totalFocusTime > 0 && (
             <Card className="p-4">

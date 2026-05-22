@@ -21,7 +21,7 @@ export interface Habit {
 export interface HabitProgress {
   id: string;
   user_id: string;
-  name: string;
+  actividad_nombre: string;
   description?: string;
   target_minutes_per_week: number;
   max_minutes_per_week: number;
@@ -29,6 +29,7 @@ export interface HabitProgress {
   is_active: boolean;
   total_minutes_invested: number;
   total_sessions: number;
+  completed_sessions: number;
   current_streak: number;
   longest_streak: number;
   completion_percentage: number;
@@ -74,16 +75,19 @@ export interface Session {
 
 export interface WeeklySummary {
   user_id: string;
-  name: string;
-  target_minutes_per_week: number;
-  minutes_this_week: number;
+  actividad_nombre: string;
+  total_sesiones_completadas: number;
+  duracion_total_minutos: number;
+  duracion_promedio_minutos: number;
 }
 
 export interface ActivityHabitMatrix {
   user_id: string;
   activity_id?: string;
   actividad_nombre: string;
+  dia_semana: string;
   total_sesiones: number;
+  sesiones_completadas: number;
   total_minutos?: number;
 }
 

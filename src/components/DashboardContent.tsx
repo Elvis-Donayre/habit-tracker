@@ -5,21 +5,23 @@ import { useSessions } from '@/hooks/useSessions';
 import { Tabs } from '@/components/ui/Tabs';
 import { Card, MetricCard } from '@/components/ui/Card';
 import { CompletionChart } from '@/components/charts/Charts';
+import { ActivityCalendar } from '@/components/calendar/ActivityCalendar';
 import { formatDuration, categorizeCompletion, calculateWeeklyCompliance, getBarColor } from '@/lib/helpers';
-import { Target, Clock, TrendingUp, BarChart3, Calendar, Zap, Activity } from 'lucide-react';
+import { Target, Clock, TrendingUp, BarChart3, Calendar, Activity } from 'lucide-react';
 
 export function DashboardContent() {
   const { user } = useAuth();
   const userId = user?.id;
   const { progress } = useHabits(userId);
   const { matrix } = useActivities(userId);
-  const { weeklySummary } = useSessions(userId);
+  const { weeklySummary, list: sessionsList } = useSessions(userId);
 
   const progressData = progress.data ?? [];
   const weeklyData = weeklySummary.data ?? [];
   const matrixData = matrix.data ?? [];
+  const sessionsData = sessionsList.data ?? [];
 
-  if (progress.isLoading) {
+  if (progress.isLoading || matrix.isLoading || weeklySummary.isLoading) {
     return (
       <div className="space-y-6 animate-pulse">
         <div className="h-8 w-48 bg-[var(--color-border)] rounded-[var(--radius-md)]" />
@@ -36,11 +38,28 @@ export function DashboardContent() {
     );
   }
 
-  if (progress.isError) {
+  const firstError = progress.error || matrix.error || weeklySummary.error;
+  if (firstError) {
+    const msg = (firstError as any)?.message ?? String(firstError);
+    const isPermissionError = msg.includes('403') || msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('forbidden');
     return (
-      <div className="alert-danger flex items-center gap-3">
-        <span className="text-base">⚠️</span>
-        <p className="text-sm">Error al cargar los datos: {String(progress.error)}</p>
+      <div className="space-y-3">
+        <div className="alert-danger flex items-start gap-3">
+          <span className="text-base shrink-0">⚠️</span>
+          <div>
+            <p className="text-sm font-medium">Error al cargar los datos del dashboard</p>
+            <p className="text-xs mt-1 opacity-80">{msg}</p>
+          </div>
+        </div>
+        {isPermissionError && (
+          <div className="alert-info text-sm space-y-2">
+            <p className="font-medium">Posible causa: permisos de base de datos</p>
+            <p>Las vistas de Supabase necesitan permisos explícitos. Ejecuta este SQL en el editor de Supabase:</p>
+            <pre className="mt-2 p-3 rounded-[var(--radius-md)] bg-[var(--color-surface)] border border-[var(--color-border)] text-[11px] font-[var(--font-mono)] overflow-x-auto whitespace-pre">{`GRANT SELECT ON habit_progress TO authenticated;
+GRANT SELECT ON weekly_summary TO authenticated;
+GRANT SELECT ON activity_habit_matrix TO authenticated;`}</pre>
+          </div>
+        )}
       </div>
     );
   }
@@ -63,8 +82,6 @@ export function DashboardContent() {
   const completedSessionsAll = uniqueProgress.reduce((sum, p) => sum + p.completed_sessions, 0);
   const globalCompletionRate = totalSessionsAll > 0 ? Math.round((completedSessionsAll / totalSessionsAll) * 100) : 0;
 
-  const weeklyCompliance = calculateWeeklyCompliance(matrixData);
-
   const weekDays = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
   const totalsByDay = new Map<string, number>();
   const completionsByDay = new Map<string, number>();
@@ -74,14 +91,19 @@ export function DashboardContent() {
   });
   const maxTotal = Math.max(...weekDays.map((d) => totalsByDay.get(d) || 0), 1);
 
+  const totalSessionsThisWeek = Array.from(totalsByDay.values()).reduce((a, b) => a + b, 0);
+  const completedSessionsThisWeek = Array.from(completionsByDay.values()).reduce((a, b) => a + b, 0);
+  const weeklyCompliance = calculateWeeklyCompliance(completedSessionsThisWeek, totalSessionsThisWeek);
+
   const todayActivityNames = matrixData
     .filter((entry) => entry.dia_semana === weekDays[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1])
     .filter((entry) => entry.total_sesiones > 0)
     .map((entry) => entry.actividad_nombre);
 
   const totalFocusTime = weeklyData.reduce((sum, w) => sum + (w.duracion_total_minutos || 0), 0);
-  const avgSessionDuration = weeklyData.length > 0
-    ? Math.round(weeklyData.reduce((sum, w) => sum + (w.duracion_promedio_minutos || 0), 0) / weeklyData.length)
+  const totalCompletedThisWeek = weeklyData.reduce((sum, w) => sum + (w.total_sesiones_completadas || 0), 0);
+  const avgSessionDuration = totalCompletedThisWeek > 0
+    ? Math.round(totalFocusTime / totalCompletedThisWeek)
     : 0;
 
   const topActivities = [...uniqueProgress]
@@ -108,11 +130,13 @@ export function DashboardContent() {
     <div className="space-y-6 page-enter">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <BarChart3 size={24} className="text-[var(--color-accent)]" />
+          <h1 className="text-[1.65rem] font-bold tracking-tight flex items-center gap-2.5">
+            <span className="w-9 h-9 rounded-[var(--radius-md)] bg-[var(--color-accent-soft)] flex items-center justify-center shrink-0">
+              <BarChart3 size={18} className="text-[var(--color-accent)]" />
+            </span>
             Resumen semanal
           </h1>
-          <p className="text-sm text-[var(--color-text-muted)] mt-1">
+          <p className="text-[13px] text-[var(--color-text-muted)] mt-1 ml-[50px]">
             Tu actividad y progreso de la semana actual
           </p>
         </div>
@@ -154,8 +178,8 @@ export function DashboardContent() {
           </div>
           <div className="space-y-3 stagger-enter">
             {topActivities.map((activity, index) => {
-              const percentage = totalSessionsAll > 0
-                ? Math.round((activity.completed_sessions / totalSessionsAll) * 100)
+              const percentage = activity.total_sessions > 0
+                ? Math.round((activity.completed_sessions / activity.total_sessions) * 100)
                 : 0;
               const categorization = categorizeCompletion(percentage);
               const barColor = getBarColor(percentage);
@@ -335,6 +359,8 @@ export function DashboardContent() {
           </>
         )}
       </Tabs>
+
+      <ActivityCalendar sessions={sessionsData} />
 
       {todayActivityNames.length > 0 && (
         <Card className="p-4 bg-[var(--color-success-soft)] border-[var(--color-success)]/20">

@@ -12,6 +12,7 @@ export interface PomodoroSettings {
   totalCycles: number;
   soundEnabled: boolean;
   autoStartBreak: boolean;
+  timerMode: 'pomodoro' | 'infinite';
 }
 
 const DEFAULT_SETTINGS: PomodoroSettings = {
@@ -21,6 +22,7 @@ const DEFAULT_SETTINGS: PomodoroSettings = {
   totalCycles: 4,
   soundEnabled: true,
   autoStartBreak: true,
+  timerMode: 'pomodoro',
 };
 
 const STORAGE_KEY = 'pomodoro-settings';
@@ -81,10 +83,13 @@ export function usePomodoro(userId: string | undefined) {
   const [pendingSession, setPendingSession] = useState<PendingSession | null>(null);
   // Incremented each time the timer (re)starts so the tick effect re-runs and recalculates the deadline
   const [timerEpoch, setTimerEpoch] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const deadlineRef = useRef<number>(0);
   const wakeLockRef = useRef<any>(null);
+  const elapsedAtPauseRef = useRef(0);
+  const infiniteSegmentStartRef = useRef(0);
 
   // Refs so completion logic always reads fresh state without extra effect deps
   const phaseRef = useRef(phase);
@@ -112,6 +117,16 @@ export function usePomodoro(userId: string | undefined) {
   // throttling or screen-off never causes the displayed time to drift.
   useEffect(() => {
     if (!isRunning) return;
+
+    if (settingsRef.current.timerMode === 'infinite') {
+      infiniteSegmentStartRef.current = Date.now();
+      const id = setInterval(() => {
+        const elapsed = elapsedAtPauseRef.current + Math.floor((Date.now() - infiniteSegmentStartRef.current) / 1000);
+        setElapsedSeconds(elapsed);
+      }, 250);
+      return () => clearInterval(id);
+    }
+
     deadlineRef.current = Date.now() + secondsLeftRef.current * 1000;
     const id = setInterval(() => {
       const remaining = Math.max(0, Math.ceil((deadlineRef.current - Date.now()) / 1000));
@@ -240,7 +255,7 @@ export function usePomodoro(userId: string | undefined) {
 
   // Detect timer completion (secondsLeft hits 0 while a phase is active)
   useEffect(() => {
-    if (secondsLeft === 0 && phase !== 'idle') {
+    if (secondsLeft === 0 && phase !== 'idle' && settingsRef.current.timerMode !== 'infinite') {
       setIsRunning(false);
       handleCompletionRef.current();
     }
@@ -248,6 +263,17 @@ export function usePomodoro(userId: string | undefined) {
 
   const start = useCallback(() => {
     if (!selectedActivityId) return;
+    if (settingsRef.current.timerMode === 'infinite') {
+      if (phase === 'idle') {
+        setPhase('work');
+        setSessionStartTime(new Date().toISOString());
+        elapsedAtPauseRef.current = 0;
+        setElapsedSeconds(0);
+      }
+      setTimerEpoch(e => e + 1);
+      setIsRunning(true);
+      return;
+    }
     if (phase === 'idle') {
       const secs = settingsRef.current.workMinutes * 60;
       setPhase('work');
@@ -259,6 +285,10 @@ export function usePomodoro(userId: string | undefined) {
   }, [phase, selectedActivityId]);
 
   const pause = useCallback(() => {
+    if (settingsRef.current.timerMode === 'infinite' && infiniteSegmentStartRef.current > 0) {
+      elapsedAtPauseRef.current += Math.floor((Date.now() - infiniteSegmentStartRef.current) / 1000);
+      infiniteSegmentStartRef.current = 0;
+    }
     setIsRunning(false);
   }, []);
 
@@ -268,7 +298,29 @@ export function usePomodoro(userId: string | undefined) {
     setSecondsLeft(0);
     setSessionStartTime('');
     setPendingSession(null);
+    setElapsedSeconds(0);
+    elapsedAtPauseRef.current = 0;
+    infiniteSegmentStartRef.current = 0;
   }, []);
+
+  const finishInfinite = useCallback(() => {
+    if (settingsRef.current.timerMode !== 'infinite' || phaseRef.current === 'idle') return;
+    const currentElapsed = isRunningRef.current && infiniteSegmentStartRef.current > 0
+      ? elapsedAtPauseRef.current + Math.floor((Date.now() - infiniteSegmentStartRef.current) / 1000)
+      : elapsedAtPauseRef.current;
+    const durationMinutes = Math.max(1, Math.round(currentElapsed / 60));
+    setIsRunning(false);
+    vibrate([300, 100, 300, 100, 500]);
+    if (selectedActivityIdRef.current && userIdRef.current) {
+      setPendingSession({ activityId: selectedActivityIdRef.current, durationMinutes, startTime: sessionStartTimeRef.current });
+      setTotalFocusMinutes(prev => prev + durationMinutes);
+    }
+    setPhase('idle');
+    setElapsedSeconds(0);
+    elapsedAtPauseRef.current = 0;
+    infiniteSegmentStartRef.current = 0;
+    setSessionStartTime('');
+  }, [vibrate]);
 
   const skip = useCallback(() => {
     if (phase === 'idle') return;
@@ -278,6 +330,16 @@ export function usePomodoro(userId: string | undefined) {
   }, [phase]);
 
   const updateSettings = useCallback((partial: Partial<PomodoroSettings>) => {
+    if ('timerMode' in partial && partial.timerMode !== settingsRef.current.timerMode) {
+      setIsRunning(false);
+      setPhase('idle');
+      setSecondsLeft(0);
+      setSessionStartTime('');
+      setPendingSession(null);
+      setElapsedSeconds(0);
+      elapsedAtPauseRef.current = 0;
+      infiniteSegmentStartRef.current = 0;
+    }
     setSettingsState(prev => {
       const next = { ...prev, ...partial };
       saveSettings(next);
@@ -329,15 +391,29 @@ export function usePomodoro(userId: string | undefined) {
 
   const minutes = Math.floor(secondsLeft / 60);
   const seconds = secondsLeft % 60;
-  const displayTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+  const elapsedHours = Math.floor(elapsedSeconds / 3600);
+  const elapsedMins = Math.floor((elapsedSeconds % 3600) / 60);
+  const elapsedSecs = elapsedSeconds % 60;
+  const displayElapsed = elapsedHours > 0
+    ? `${elapsedHours}:${String(elapsedMins).padStart(2, '0')}:${String(elapsedSecs).padStart(2, '0')}`
+    : `${String(elapsedMins).padStart(2, '0')}:${String(elapsedSecs).padStart(2, '0')}`;
+
+  const displayTime = settings.timerMode === 'infinite'
+    ? displayElapsed
+    : `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
   const totalPhaseSeconds = getPhaseSeconds(phase, settings);
-  const progress = totalPhaseSeconds > 0 ? ((totalPhaseSeconds - secondsLeft) / totalPhaseSeconds) * 100 : 0;
+  const pomodoroProgress = totalPhaseSeconds > 0 ? ((totalPhaseSeconds - secondsLeft) / totalPhaseSeconds) * 100 : 0;
+  const referenceSeconds = settings.workMinutes * 60;
+  const infiniteProgress = referenceSeconds > 0 ? (elapsedSeconds % referenceSeconds) / referenceSeconds * 100 : 0;
+  const progress = settings.timerMode === 'infinite' ? infiniteProgress : pomodoroProgress;
 
   return {
     phase,
     displayTime,
     progress,
+    elapsedSeconds,
     cycleCount,
     totalFocusTime: totalFocusMinutes * 60,
     selectedActivityId,
@@ -348,6 +424,7 @@ export function usePomodoro(userId: string | undefined) {
     pause,
     reset,
     skip,
+    finishInfinite,
     isRunning,
     sessionCompleted: pendingSession !== null,
     completedSessionId: pendingSession?.startTime ?? null,

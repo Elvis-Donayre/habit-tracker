@@ -10,11 +10,12 @@ export function useActivities(userId: string | undefined) {
     queryKey: ['activities', userId],
     queryFn: async () => {
       if (!userId) return [];
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('activities')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
+      if (error) throw error;
       return (data as Activity[]) ?? [];
     },
     enabled: !!userId,
@@ -24,10 +25,11 @@ export function useActivities(userId: string | undefined) {
     queryKey: ['activity-matrix', userId],
     queryFn: async () => {
       if (!userId) return [];
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('activity_habit_matrix')
         .select('*')
         .eq('user_id', userId);
+      if (error) throw error;
       return (data as ActivityHabitMatrix[]) ?? [];
     },
     enabled: !!userId,
@@ -38,14 +40,16 @@ export function useActivities(userId: string | undefined) {
     queryFn: async () => {
       if (!userId) return [];
       const result: Category[] = [];
-      const { data: predefined } = await supabase.from('categories').select('*');
+      const { data: predefined, error: predefinedError } = await supabase.from('categories').select('*');
+      if (predefinedError) throw predefinedError;
       if (predefined) {
         result.push(...predefined.map((c) => ({ ...c, type: 'system' as const })));
       }
-      const { data: personal } = await supabase
+      const { data: personal, error: personalError } = await supabase
         .from('user_categories')
         .select('*')
         .eq('user_id', userId);
+      if (personalError) throw personalError;
       if (personal) {
         result.push(...personal.map((c) => ({ ...c, type: 'personal' as const })));
       }
@@ -85,7 +89,8 @@ export function useActivities(userId: string | undefined) {
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
-      await supabase.from('activities').delete().eq('id', id);
+      const { error } = await supabase.from('activities').delete().eq('id', id);
+      if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['activities', userId] });
@@ -94,10 +99,11 @@ export function useActivities(userId: string | undefined) {
   });
 
   const getLinks = async (activityId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('habit_activities')
       .select('*, habits(id, name)')
       .eq('activity_id', activityId);
+    if (error) throw error;
     return (data as HabitActivity[]) ?? [];
   };
 

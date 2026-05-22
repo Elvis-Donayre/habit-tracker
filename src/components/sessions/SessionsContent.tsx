@@ -14,7 +14,9 @@ export function SessionsContent() {
   return (
     <div className="space-y-6">
       <h1 className="text-[1.65rem] font-bold tracking-tight flex items-center gap-2.5">
-        <BookOpen size={19} className="text-[var(--color-accent)]" />
+        <span className="w-9 h-9 rounded-[var(--radius-md)] bg-[var(--color-accent-soft)] flex items-center justify-center shrink-0">
+          <BookOpen size={18} className="text-[var(--color-accent)]" />
+        </span>
         Registrar Sesión
       </h1>
 
@@ -104,7 +106,7 @@ function NewSessionForm({ userId }: { userId: string }) {
   };
 
   return (
-    <Card>
+    <Card className="p-5">
       <h3 className="text-lg font-semibold mb-6">Registrar Nueva Sesión</h3>
 
       {activityList.length === 0 ? (
@@ -312,7 +314,7 @@ function SessionHistory({ userId }: { userId: string }) {
       </div>
 
       {filtered.length === 0 ? (
-        <Card>
+        <Card className="p-5">
           <p className="text-center py-8 text-[var(--color-text-muted)]">No hay sesiones en este período.</p>
         </Card>
       ) : (
@@ -324,7 +326,7 @@ function SessionHistory({ userId }: { userId: string }) {
             <MetricCard label="Mood Promedio" value={`${avgMood.toFixed(1)}/5`} accentColor="info" icon={<span className="text-lg">{getMoodEmoji(Math.round(avgMood))}</span>} />
           </div>
 
-          <Card>
+          <Card className="p-5">
             <h3 className="text-lg font-semibold mb-4">Detalle de Sesiones</h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -402,7 +404,7 @@ function BookStats({ userId }: { userId: string }) {
         <MetricCard label="Sesiones" value={bookSessions.length} accentColor="info" icon={<List size={18} />} />
       </div>
 
-      <Card>
+      <Card className="p-5">
         <h3 className="text-base font-semibold mb-4">Tiempo por libro</h3>
         <div className="space-y-3">
           {books.map(([title, stats], i) => {

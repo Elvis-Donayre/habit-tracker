@@ -1,6 +1,5 @@
-import { useState, type ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { LayoutDashboard, Target, Zap, BookOpen, LogOut, Menu, X, Activity, Timer } from 'lucide-react';
+import { LayoutDashboard, Target, Zap, BookOpen, LogOut, X, Activity, Timer } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -10,32 +9,25 @@ const navItems = [
   { href: '/sessions', label: 'Sesiones', icon: BookOpen },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export function Sidebar({ open, onClose }: SidebarProps) {
   const { user, signOut } = useAuth();
-  const [open, setOpen] = useState(false);
   const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
 
   return (
     <>
-      {/* Mobile hamburger */}
-      <button
-        onClick={() => setOpen(true)}
-        className="fixed top-4 left-4 z-50 lg:hidden p-2.5 rounded-[var(--radius-md)] bg-[var(--color-surface)] border border-[var(--color-border)] shadow-[var(--shadow-sm)] active:scale-95 transition-transform"
-        aria-label="Abrir menú"
-      >
-        <Menu size={18} />
-      </button>
-
-      {/* Overlay */}
       {open && (
         <div
           className="fixed inset-0 bg-black/40 z-40 lg:hidden backdrop-blur-sm"
           style={{ animation: 'fadeIn 0.2s ease-out' }}
-          onClick={() => setOpen(false)}
+          onClick={onClose}
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`
           fixed top-0 left-0 h-full w-[260px] z-50
@@ -46,7 +38,6 @@ export function Sidebar() {
           ${open ? 'translate-x-0 shadow-[var(--shadow-xl)]' : '-translate-x-full'}
         `}
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-5 h-16 border-b border-[var(--color-border)] shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-[var(--radius-sm)] bg-[var(--color-accent)] flex items-center justify-center shadow-[var(--shadow-xs)]">
@@ -55,7 +46,7 @@ export function Sidebar() {
             <span className="font-bold text-[15px] tracking-tight">Habit Tracker</span>
           </div>
           <button
-            onClick={() => setOpen(false)}
+            onClick={onClose}
             className="lg:hidden p-1.5 rounded-[var(--radius-sm)] hover:bg-[var(--color-text)]/[0.05] transition-colors"
             aria-label="Cerrar menú"
           >
@@ -63,7 +54,6 @@ export function Sidebar() {
           </button>
         </div>
 
-        {/* User info */}
         <div className="px-5 py-4 border-b border-[var(--color-border)] shrink-0">
           <p className="text-[13px] font-medium truncate">{user?.email}</p>
           <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5 font-[var(--font-mono)] tracking-tight">
@@ -71,7 +61,6 @@ export function Sidebar() {
           </p>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
           <p className="px-3 pt-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
             Navegación
@@ -83,7 +72,7 @@ export function Sidebar() {
               <a
                 key={item.href}
                 href={item.href}
-                onClick={() => setOpen(false)}
+                onClick={onClose}
                 className={`
                   group flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-md)] text-[13px] font-medium
                   transition-all duration-150 ease-out relative
@@ -106,7 +95,6 @@ export function Sidebar() {
           })}
         </nav>
 
-        {/* Logout */}
         <div className="p-3 border-t border-[var(--color-border)] shrink-0">
           <button
             onClick={signOut}

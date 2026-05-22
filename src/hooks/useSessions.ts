@@ -10,12 +10,15 @@ export function useSessions(userId: string | undefined) {
     queryKey: ['sessions', userId],
     queryFn: async () => {
       if (!userId) return [];
-      const { data } = await supabase
+      // Filter sessions through the activities join — sessions have no direct user_id column.
+      // RLS on the sessions table must allow access based on auth.uid() via the activity relationship.
+      const { data, error } = await supabase
         .from('sessions')
-        .select('*, activities(user_id, name)')
+        .select('*, activities!inner(user_id, name)')
         .eq('activities.user_id', userId)
         .order('session_date', { ascending: false })
-        .limit(100);
+        .limit(200);
+      if (error) throw error;
       return (data as Session[]) ?? [];
     },
     enabled: !!userId,
@@ -25,10 +28,11 @@ export function useSessions(userId: string | undefined) {
     queryKey: ['weekly-summary', userId],
     queryFn: async () => {
       if (!userId) return [];
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('weekly_summary')
         .select('*')
         .eq('user_id', userId);
+      if (error) throw error;
       return (data as WeeklySummary[]) ?? [];
     },
     enabled: !!userId,

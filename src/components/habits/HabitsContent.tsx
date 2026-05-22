@@ -15,8 +15,10 @@ export function HabitsContent() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-        <Target size={24} className="text-[var(--color-accent)]" />
+      <h1 className="text-[1.65rem] font-bold tracking-tight flex items-center gap-2.5">
+        <span className="w-9 h-9 rounded-[var(--radius-md)] bg-[var(--color-accent-soft)] flex items-center justify-center shrink-0">
+          <Target size={18} className="text-[var(--color-accent)]" />
+        </span>
         Mis Hábitos
       </h1>
 
@@ -106,7 +108,7 @@ function CreateHabitForm({ userId, habits }: { userId: string; habits: ReturnTyp
   };
 
   return (
-    <Card>
+    <Card className="p-5">
       <h3 className="text-lg font-semibold mb-6">Crear Nueva Meta Personalizada</h3>
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
@@ -124,7 +126,7 @@ function CreateHabitForm({ userId, habits }: { userId: string; habits: ReturnTyp
             onChange={(e) => setName(e.target.value)}
             placeholder="Ej: Aprender italiano, Escribir una novela, Meditar 30 min diarios"
             maxLength={255}
-            className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] dark:border-[var(--color-border-dark)] bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
           />
         </div>
 
@@ -136,7 +138,7 @@ function CreateHabitForm({ userId, habits }: { userId: string; habits: ReturnTyp
             placeholder="Da contexto sobre por qué esta meta es importante para ti"
             maxLength={1000}
             rows={3}
-            className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] dark:border-[var(--color-border-dark)] bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] resize-none"
+            className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] resize-none"
           />
         </div>
 
@@ -151,14 +153,14 @@ function CreateHabitForm({ userId, habits }: { userId: string; habits: ReturnTyp
             onChange={(e) => setInitialActivity(e.target.value)}
             placeholder="Ej: Estudiar vocabulario, Practicar ejercicios..."
             maxLength={255}
-            className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] dark:border-[var(--color-border-dark)] bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
           />
           <p className="text-xs text-[var(--color-text-muted)] mt-1">
             Se creará la actividad y se vinculará automáticamente a este hábito
           </p>
         </div>
 
-        <div className="border-t border-[var(--color-border)] dark:border-[var(--color-border-dark)] pt-6">
+        <div className="border-t border-[var(--color-border)] pt-6">
           <p className="text-sm font-medium mb-4">Configura tus objetivos</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
@@ -170,7 +172,7 @@ function CreateHabitForm({ userId, habits }: { userId: string; habits: ReturnTyp
                 min={30}
                 max={10000}
                 step={30}
-                className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] dark:border-[var(--color-border-dark)] bg-transparent text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] font-[var(--font-mono)] text-sm"
+                className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] font-[var(--font-mono)] text-sm"
               />
             </div>
             <div>
@@ -182,7 +184,7 @@ function CreateHabitForm({ userId, habits }: { userId: string; habits: ReturnTyp
                 min={60}
                 max={10000}
                 step={30}
-                className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] dark:border-[var(--color-border-dark)] bg-transparent text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] font-[var(--font-mono)] text-sm"
+                className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] font-[var(--font-mono)] text-sm"
               />
             </div>
             <div>
@@ -194,12 +196,12 @@ function CreateHabitForm({ userId, habits }: { userId: string; habits: ReturnTyp
                 min={10}
                 max={10000}
                 step={10}
-                className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] dark:border-[var(--color-border-dark)] bg-transparent text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] font-[var(--font-mono)] text-sm"
+                className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] font-[var(--font-mono)] text-sm"
               />
             </div>
           </div>
           {targetWeekly > 0 && (
-            <div className="mt-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 text-sm">
+            <div className="alert-info mt-3 text-sm">
               Con <strong>{formatDuration(targetWeekly)}/semana</strong>, completarás {totalGoal}h en ~<strong>{weeks} semanas</strong> ({estimatedDate})
             </div>
           )}
@@ -233,7 +235,7 @@ function HabitList({ userId, habits }: { userId: string; habits: ReturnType<type
 
   if (allHabits.length === 0) {
     return (
-      <Card>
+      <Card className="p-5">
         <div className="text-center py-12">
           <Target size={48} className="mx-auto text-[var(--color-text-muted)] mb-4 opacity-50" />
           <p className="text-[var(--color-text-muted)]">Aún no has creado ninguna meta.</p>
@@ -253,7 +255,7 @@ function HabitList({ userId, habits }: { userId: string; habits: ReturnType<type
             className={`px-3 py-2.5 text-xs font-medium rounded-full transition-colors ${
               filter === f
                 ? 'bg-[var(--color-accent)] text-white'
-                : 'bg-gray-100 dark:bg-gray-800 text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
+                : 'bg-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
             }`}
           >
             {f === 'all' ? 'Todos' : f === 'active' ? 'Activos' : 'Inactivos'}
@@ -269,7 +271,7 @@ function HabitList({ userId, habits }: { userId: string; habits: ReturnType<type
         const catInfo = categorizeCompletion(metric?.completion_percentage ?? 0);
 
         return (
-          <Card key={habit.id}>
+          <Card key={habit.id} className="p-5">
             <div className="flex flex-col sm:flex-row sm:items-start gap-4">
               <div className="flex-1 space-y-3">
                 <div className="flex items-center gap-2">
@@ -299,7 +301,7 @@ function HabitList({ userId, habits }: { userId: string; habits: ReturnType<type
                 </div>
 
                 {metric && (
-                  <div className="pt-2 border-t border-[var(--color-border)] dark:border-[var(--color-border-dark)]">
+                  <div className="pt-2 border-t border-[var(--color-border)]">
                     <div className="grid grid-cols-3 gap-3 mb-2">
                       <div>
                         <p className="text-xs text-[var(--color-text-muted)]">Invertido</p>
@@ -314,7 +316,7 @@ function HabitList({ userId, habits }: { userId: string; habits: ReturnType<type
                         <p className="text-sm font-semibold">{(metric.completion_percentage ?? 0).toFixed(1)}%</p>
                       </div>
                     </div>
-                    <div className="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-[var(--color-border)] rounded-full overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all duration-500"
                         style={{
@@ -331,7 +333,7 @@ function HabitList({ userId, habits }: { userId: string; habits: ReturnType<type
               <div className="flex sm:flex-col gap-2 shrink-0">
                 <button
                   onClick={() => setEditingId(isEditing ? null : habit.id)}
-                  className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium rounded-lg border border-[var(--color-border)] dark:border-[var(--color-border-dark)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium rounded-[var(--radius-md)] border border-[var(--color-border)] hover-surface transition-colors"
                 >
                   <Edit2 size={14} />
                   Editar
@@ -343,14 +345,14 @@ function HabitList({ userId, habits }: { userId: string; habits: ReturnType<type
                       updates: { is_active: !habit.is_active },
                     })
                   }
-                  className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium rounded-lg border border-[var(--color-border)] dark:border-[var(--color-border-dark)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium rounded-[var(--radius-md)] border border-[var(--color-border)] hover-surface transition-colors"
                 >
                   {habit.is_active ? <Pause size={14} /> : <Play size={14} />}
                   {habit.is_active ? 'Pausar' : 'Activar'}
                 </button>
                 <button
                   onClick={() => setConfirmDeleteId(habit.id)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-red-200 dark:border-red-800 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[var(--radius-md)] border border-[var(--color-danger)]/30 text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] transition-colors"
                 >
                   <Trash2 size={14} />
                   Eliminar
@@ -372,21 +374,21 @@ function HabitList({ userId, habits }: { userId: string; habits: ReturnType<type
 
             {/* Delete Confirmation */}
             {isConfirmingDelete && (
-              <div className="mt-4 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800">
-                <p className="text-sm text-yellow-800 dark:text-yellow-300 mb-3">¿Estás seguro de eliminar este hábito?</p>
+              <div className="alert-warning mt-4">
+                <p className="text-sm mb-3">¿Estás seguro de eliminar este hábito?</p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => {
                       habits.remove.mutate(habit.id);
                       setConfirmDeleteId(null);
                     }}
-                    className="px-3 py-2.5 text-xs font-medium bg-red-600 text-white rounded-lg hover:bg-red-700"
+                    className="btn-danger px-3 py-2.5 text-xs font-medium rounded-[var(--radius-md)]"
                   >
                     Sí, eliminar
                   </button>
                   <button
                     onClick={() => setConfirmDeleteId(null)}
-                    className="px-3 py-2.5 text-xs font-medium rounded-lg border border-[var(--color-border)] hover:bg-black/5"
+                    className="px-3 py-2.5 text-xs font-medium rounded-[var(--radius-md)] border border-[var(--color-border)] hover-surface transition-colors"
                   >
                     Cancelar
                   </button>
@@ -416,7 +418,7 @@ function EditHabitForm({
   const [goal, setGoal] = useState(habit.total_hours_goal);
 
   return (
-    <div className="mt-4 pt-4 border-t border-[var(--color-border)] dark:border-[var(--color-border-dark)] space-y-4">
+    <div className="mt-4 pt-4 border-t border-[var(--color-border)] space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs text-[var(--color-text-muted)] mb-1">Nombre</label>
@@ -424,7 +426,7 @@ function EditHabitForm({
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] dark:border-[var(--color-border-dark)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
           />
         </div>
         <div>
@@ -433,22 +435,22 @@ function EditHabitForm({
             type="text"
             value={desc}
             onChange={(e) => setDesc(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] dark:border-[var(--color-border-dark)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
           />
         </div>
       </div>
       <div className="grid grid-cols-3 gap-4">
         <div>
           <label className="block text-xs text-[var(--color-text-muted)] mb-1">Target/sem (min)</label>
-          <input type="number" value={target} onChange={(e) => setTarget(Number(e.target.value))} min={30} className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] dark:border-[var(--color-border-dark)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] font-[var(--font-mono)]" />
+          <input type="number" value={target} onChange={(e) => setTarget(Number(e.target.value))} min={30} className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] font-[var(--font-mono)]" />
         </div>
         <div>
           <label className="block text-xs text-[var(--color-text-muted)] mb-1">Máx/sem (min)</label>
-          <input type="number" value={max} onChange={(e) => setMax(Number(e.target.value))} min={60} className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] dark:border-[var(--color-border-dark)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] font-[var(--font-mono)]" />
+          <input type="number" value={max} onChange={(e) => setMax(Number(e.target.value))} min={60} className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] font-[var(--font-mono)]" />
         </div>
         <div>
           <label className="block text-xs text-[var(--color-text-muted)] mb-1">Objetivo (h)</label>
-          <input type="number" value={goal} onChange={(e) => setGoal(Number(e.target.value))} min={10} className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] dark:border-[var(--color-border-dark)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] font-[var(--font-mono)]" />
+          <input type="number" value={goal} onChange={(e) => setGoal(Number(e.target.value))} min={10} className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] font-[var(--font-mono)]" />
         </div>
       </div>
       <div className="flex gap-2">
@@ -458,7 +460,7 @@ function EditHabitForm({
         >
           Guardar
         </button>
-        <button onClick={onCancel} className="px-4 py-2 text-sm font-medium rounded-lg border border-[var(--color-border)] hover:bg-black/5">
+        <button onClick={onCancel} className="px-4 py-2 text-sm font-medium rounded-[var(--radius-md)] border border-[var(--color-border)] hover-surface transition-colors">
           Cancelar
         </button>
       </div>

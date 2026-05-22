@@ -73,11 +73,13 @@ export function ActivitiesContent() {
     <div className="space-y-6 page-enter">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Activity size={24} className="text-[var(--color-accent)]" />
+          <h1 className="text-[1.65rem] font-bold tracking-tight flex items-center gap-2.5">
+            <span className="w-9 h-9 rounded-[var(--radius-md)] bg-[var(--color-accent-soft)] flex items-center justify-center shrink-0">
+              <Activity size={18} className="text-[var(--color-accent)]" />
+            </span>
             Actividades
           </h1>
-          <p className="text-sm text-[var(--color-text-muted)] mt-1">
+          <p className="text-[13px] text-[var(--color-text-muted)] mt-1 ml-[50px]">
             Gestiona tus actividades y revisa tu matriz de seguimiento
           </p>
         </div>
@@ -196,7 +198,7 @@ export function ActivitiesContent() {
                 </div>
               ) : (
                 <div
-                  className="card-interactive p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  className="rounded-[var(--radius-lg)] bg-[var(--color-surface)] border border-[var(--color-border)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] hover:border-[var(--color-text-muted)]/15 transition-all duration-200 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <div className="flex-1 min-w-0 space-y-2">

@@ -10,11 +10,12 @@ export function useHabits(userId: string | undefined) {
     queryKey: ['habits', userId],
     queryFn: async () => {
       if (!userId) return [];
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('habits')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
+      if (error) throw error;
       return (data as Habit[]) ?? [];
     },
     enabled: !!userId,
@@ -24,10 +25,11 @@ export function useHabits(userId: string | undefined) {
     queryKey: ['habit-progress', userId],
     queryFn: async () => {
       if (!userId) return [];
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('habit_progress')
         .select('*')
         .eq('user_id', userId);
+      if (error) throw error;
       return (data as HabitProgress[]) ?? [];
     },
     enabled: !!userId,
@@ -87,16 +89,18 @@ export function useHabits(userId: string | undefined) {
     queryKey: ['habit-metrics-batch', userId],
     queryFn: async () => {
       if (!userId) return [];
-      const { data: habits } = await supabase
+      const { data: habits, error: habitsError } = await supabase
         .from('habits')
         .select('id')
         .eq('user_id', userId);
+      if (habitsError) throw habitsError;
       if (!habits?.length) return [];
       const ids = habits.map((h) => h.id);
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('habit_metrics')
         .select('*')
         .in('habit_id', ids);
+      if (error) throw error;
       return (data as HabitMetrics[]) ?? [];
     },
     enabled: !!userId,

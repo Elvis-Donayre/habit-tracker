@@ -18,7 +18,7 @@ export function Card({ accentColor, variant = 'default', children, className = '
     <div
       className={`
         ${variantStyles[variant]}
-        rounded-[var(--radius-lg)] p-5
+        rounded-[var(--radius-lg)]
         transition-all duration-200 ease-out
         ${className}
       `}
@@ -56,7 +56,7 @@ export function MetricCard({
   const accent = accentColor ? accentMap[accentColor] : accentMap.accent;
 
   return (
-    <Card variant="interactive">
+    <Card variant="interactive" className="p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--color-text-muted)] mb-2">
