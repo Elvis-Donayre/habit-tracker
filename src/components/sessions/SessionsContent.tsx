@@ -5,7 +5,8 @@ import { useSessions } from '@/hooks/useSessions';
 import { Tabs } from '@/components/ui/Tabs';
 import { Card, MetricCard } from '@/components/ui/Card';
 import { formatDuration, formatDateSpanish, getMoodEmoji, getProductivityBars } from '@/lib/helpers';
-import { Plus, List, BookOpen, Clock, TrendingUp, Download, Book } from 'lucide-react';
+import { Plus, List, BookOpen, Clock, TrendingUp, Download, Book, Trash2, Library } from 'lucide-react';
+import { useBooks } from '@/hooks/useBooks';
 
 export function SessionsContent() {
   const { user } = useAuth();
@@ -24,14 +25,14 @@ export function SessionsContent() {
         tabs={[
           { id: 'new', label: 'Nueva Sesión', icon: <Plus size={16} /> },
           { id: 'history', label: 'Sesiones Recientes', icon: <List size={16} /> },
-          { id: 'books', label: 'Mis Libros', icon: <Book size={16} /> },
+          { id: 'books', label: 'Biblioteca', icon: <Book size={16} /> },
         ]}
       >
         {(activeTab) => (
           <>
             {activeTab === 'new' && <NewSessionForm userId={userId} />}
             {activeTab === 'history' && <SessionHistory userId={userId} />}
-            {activeTab === 'books' && <BookStats userId={userId} />}
+            {activeTab === 'books' && <BookLibrary userId={userId} />}
           </>
         )}
       </Tabs>
@@ -42,7 +43,9 @@ export function SessionsContent() {
 function NewSessionForm({ userId }: { userId: string }) {
   const activities = useActivities(userId);
   const sessions = useSessions(userId);
+  const books = useBooks(userId);
   const activityList = activities.list.data ?? [];
+  const bookList = books.list.data ?? [];
 
   const [activityId, setActivityId] = useState('');
   const [duration, setDuration] = useState(60);
@@ -50,6 +53,7 @@ function NewSessionForm({ userId }: { userId: string }) {
   const [mood, setMood] = useState(3);
   const [productivity, setProductivity] = useState(3);
   const [notes, setNotes] = useState('');
+  const [bookId, setBookId] = useState('');
   const [bookTitle, setBookTitle] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -58,8 +62,17 @@ function NewSessionForm({ userId }: { userId: string }) {
   const selectedActivity = activityList.find((a) => a.id === activityId);
   const [links, setLinks] = useState<any[]>([]);
 
+  const isLecturaActivity = Boolean(
+    selectedActivity &&
+      (selectedActivity.tipo === 'Lectura' ||
+        selectedActivity.name.toLowerCase().includes('lectura') ||
+        selectedActivity.name.toLowerCase().includes('libro')),
+  );
+
   const handleActivityChange = async (id: string) => {
     setActivityId(id);
+    setBookId('');
+    setBookTitle('');
     if (id) {
       const l = await activities.getLinks(id);
       setLinks(l);
@@ -89,6 +102,7 @@ function NewSessionForm({ userId }: { userId: string }) {
       });
       setSuccess(`¡Sesión registrada! ${duration} minutos en ${selectedActivity?.name}`);
       setNotes('');
+      setBookId('');
       setBookTitle('');
       setTimeout(() => setSuccess(''), 5000);
     } catch {
@@ -198,16 +212,59 @@ function NewSessionForm({ userId }: { userId: string }) {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1.5">Libro (opcional)</label>
-            <input
-              type="text"
-              value={bookTitle}
-              onChange={(e) => setBookTitle(e.target.value)}
-              placeholder="Ej: El Hobbit"
-              className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
-            />
-          </div>
+          {isLecturaActivity && (
+            <div>
+              <label className="block text-sm font-medium mb-1.5">Libro</label>
+              {bookList.length > 0 ? (
+                <div className="space-y-2">
+                  <select
+                    value={bookId}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setBookId(val);
+                      if (val === 'custom' || val === '') {
+                        setBookTitle('');
+                      } else {
+                        const found = bookList.find((b) => b.id === val);
+                        setBookTitle(found?.title ?? '');
+                      }
+                    }}
+                    className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+                  >
+                    <option value="">-- Seleccionar libro --</option>
+                    {bookList.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.title}{b.author ? ` — ${b.author}` : ''}
+                      </option>
+                    ))}
+                    <option value="custom">Otro título...</option>
+                  </select>
+                  {bookId === 'custom' && (
+                    <input
+                      type="text"
+                      value={bookTitle}
+                      onChange={(e) => setBookTitle(e.target.value)}
+                      placeholder="Escribe el título del libro"
+                      className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+                    />
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <input
+                    type="text"
+                    value={bookTitle}
+                    onChange={(e) => setBookTitle(e.target.value)}
+                    placeholder="Ej: El Hobbit"
+                    className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+                  />
+                  <p className="text-xs text-[var(--color-text-muted)]">
+                    Agrega libros en la pestaña Biblioteca para seleccionarlos rápidamente.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium mb-1.5">Notas (opcional)</label>
@@ -363,78 +420,166 @@ function SessionHistory({ userId }: { userId: string }) {
   );
 }
 
-function BookStats({ userId }: { userId: string }) {
+function BookLibrary({ userId }: { userId: string }) {
+  const books = useBooks(userId);
   const sessions = useSessions(userId);
+  const bookList = books.list.data ?? [];
   const sessionList = sessions.list.data ?? [];
 
-  const bookSessions = sessionList.filter((s) => !!s.book_title);
+  const [title, setTitle] = useState('');
+  const [author, setAuthor] = useState('');
+  const [addError, setAddError] = useState('');
 
+  const bookSessions = sessionList.filter((s) => !!s.book_title);
   const byBook = bookSessions.reduce<Record<string, { minutes: number; sessions: number; lastDate: string }>>((acc, s) => {
-    const title = s.book_title!;
-    if (!acc[title]) acc[title] = { minutes: 0, sessions: 0, lastDate: s.session_date };
-    acc[title].minutes += s.duration_minutes ?? 0;
-    acc[title].sessions += 1;
-    if (s.session_date > acc[title].lastDate) acc[title].lastDate = s.session_date;
+    const t = s.book_title!;
+    if (!acc[t]) acc[t] = { minutes: 0, sessions: 0, lastDate: s.session_date };
+    acc[t].minutes += s.duration_minutes ?? 0;
+    acc[t].sessions += 1;
+    if (s.session_date > acc[t].lastDate) acc[t].lastDate = s.session_date;
     return acc;
   }, {});
 
-  const books = Object.entries(byBook).sort((a, b) => b[1].minutes - a[1].minutes);
+  const totalReadingMinutes = Object.values(byBook).reduce((s, b) => s + b.minutes, 0);
+  const statsByTitle = Object.entries(byBook).sort((a, b) => b[1].minutes - a[1].minutes);
 
-  const totalMinutes = books.reduce((sum, [, s]) => sum + s.minutes, 0);
-
-  if (books.length === 0) {
-    return (
-      <Card className="p-12 text-center">
-        <div className="w-14 h-14 rounded-[var(--radius-xl)] bg-[var(--color-accent-soft)] flex items-center justify-center mx-auto mb-4">
-          <Book size={28} className="text-[var(--color-accent)]" />
-        </div>
-        <h3 className="text-sm font-semibold mb-1">Sin libros registrados</h3>
-        <p className="text-sm text-[var(--color-text-muted)]">
-          Al registrar una sesión, indica el libro que estabas leyendo para verlo aquí.
-        </p>
-      </Card>
-    );
-  }
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) { setAddError('Escribe un título'); return; }
+    setAddError('');
+    try {
+      await books.add.mutateAsync({ title, author: author || undefined });
+      setTitle('');
+      setAuthor('');
+    } catch {
+      setAddError('Error guardando libro');
+    }
+  };
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <MetricCard label="Libros distintos" value={books.length} accentColor="accent" icon={<Book size={18} />} />
-        <MetricCard label="Tiempo total" value={formatDuration(totalMinutes)} accentColor="success" icon={<Clock size={18} />} />
-        <MetricCard label="Sesiones" value={bookSessions.length} accentColor="info" icon={<List size={18} />} />
-      </div>
-
+    <div className="space-y-6">
       <Card className="p-5">
-        <h3 className="text-base font-semibold mb-4">Tiempo por libro</h3>
-        <div className="space-y-3">
-          {books.map(([title, stats], i) => {
-            const pct = totalMinutes > 0 ? (stats.minutes / totalMinutes) * 100 : 0;
-            return (
-              <div key={title}>
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-xs text-[var(--color-text-muted)] w-5 shrink-0">#{i + 1}</span>
-                    <span className="text-sm font-medium truncate">{title}</span>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0 ml-3">
-                    <span className="text-xs text-[var(--color-text-muted)]">{stats.sessions} ses.</span>
-                    <span className="text-sm font-semibold font-[var(--font-mono)]">{formatDuration(stats.minutes)}</span>
-                  </div>
-                </div>
-                <div className="h-1.5 rounded-full bg-[var(--color-border)]">
-                  <div
-                    className="h-full rounded-full bg-[var(--color-accent)] transition-all"
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-                <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
-                  Última sesión: {formatDateSpanish(new Date(stats.lastDate + 'T12:00:00'))}
-                </p>
-              </div>
-            );
-          })}
-        </div>
+        <h3 className="text-base font-semibold mb-4 flex items-center gap-2">
+          <Library size={16} className="text-[var(--color-accent)]" />
+          Agregar a mi biblioteca
+        </h3>
+        <form onSubmit={handleAdd} className="space-y-3">
+          {addError && <div className="alert-danger text-sm">{addError}</div>}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Título del libro *"
+              className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            />
+            <input
+              value={author}
+              onChange={(e) => setAuthor(e.target.value)}
+              placeholder="Autor (opcional)"
+              className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={books.add.isPending}
+            className="w-full py-2.5 bg-[var(--color-accent)] text-white rounded-lg font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-50 transition-all text-sm"
+          >
+            {books.add.isPending ? 'Guardando...' : 'Agregar libro'}
+          </button>
+        </form>
       </Card>
+
+      {bookList.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <MetricCard label="En biblioteca" value={bookList.length} accentColor="accent" icon={<Book size={18} />} />
+          <MetricCard label="Tiempo lectura" value={formatDuration(totalReadingMinutes)} accentColor="success" icon={<Clock size={18} />} />
+          <MetricCard label="Sesiones" value={bookSessions.length} accentColor="info" icon={<List size={18} />} />
+        </div>
+      )}
+
+      {bookList.length === 0 ? (
+        <Card className="p-12 text-center">
+          <div className="w-14 h-14 rounded-[var(--radius-xl)] bg-[var(--color-accent-soft)] flex items-center justify-center mx-auto mb-4">
+            <Book size={28} className="text-[var(--color-accent)]" />
+          </div>
+          <h3 className="text-sm font-semibold mb-1">Biblioteca vacía</h3>
+          <p className="text-sm text-[var(--color-text-muted)]">
+            Agrega libros arriba para seleccionarlos al registrar sesiones de lectura.
+          </p>
+        </Card>
+      ) : (
+        <Card className="p-5">
+          <h3 className="text-base font-semibold mb-4">Mi biblioteca ({bookList.length})</h3>
+          <div className="space-y-2">
+            {bookList.map((book) => {
+              const stats = byBook[book.title];
+              return (
+                <div
+                  key={book.id}
+                  className="flex items-center gap-3 p-3 rounded-[var(--radius-md)] bg-[var(--color-bg)] border border-[var(--color-border)]"
+                >
+                  <div className="w-9 h-9 rounded-[var(--radius-sm)] bg-[var(--color-accent-soft)] flex items-center justify-center shrink-0">
+                    <BookOpen size={14} className="text-[var(--color-accent)]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{book.title}</p>
+                    {book.author && (
+                      <p className="text-xs text-[var(--color-text-muted)] truncate">{book.author}</p>
+                    )}
+                    {stats && (
+                      <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                        {formatDuration(stats.minutes)} · {stats.sessions} {stats.sessions === 1 ? 'sesión' : 'sesiones'}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => books.remove.mutate(book.id)}
+                    disabled={books.remove.isPending}
+                    className="p-1.5 rounded-[var(--radius-sm)] text-[var(--color-text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors shrink-0"
+                    aria-label="Eliminar libro"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
+      {statsByTitle.length > 0 && (
+        <Card className="p-5">
+          <h3 className="text-base font-semibold mb-4">Tiempo por libro</h3>
+          <div className="space-y-3">
+            {statsByTitle.map(([bookTitle, stats], i) => {
+              const pct = totalReadingMinutes > 0 ? (stats.minutes / totalReadingMinutes) * 100 : 0;
+              return (
+                <div key={bookTitle}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-xs text-[var(--color-text-muted)] w-5 shrink-0">#{i + 1}</span>
+                      <span className="text-sm font-medium truncate">{bookTitle}</span>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0 ml-3">
+                      <span className="text-xs text-[var(--color-text-muted)]">{stats.sessions} ses.</span>
+                      <span className="text-sm font-semibold font-[var(--font-mono)]">{formatDuration(stats.minutes)}</span>
+                    </div>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-[var(--color-border)]">
+                    <div
+                      className="h-full rounded-full bg-[var(--color-accent)] transition-all"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                    Última sesión: {formatDateSpanish(new Date(stats.lastDate + 'T12:00:00'))}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

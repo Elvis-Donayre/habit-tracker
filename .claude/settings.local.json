@@ -10,7 +10,8 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Usuario\\\\Documents\\\\Proyectos Python\\\\habit-tracker-webv2\\\\src\" -Recurse -File)",
       "Bash(Select-Object FullName)",
       "Bash(ConvertTo-Json)",
-      "Bash(pnpm tsc *)"
+      "Bash(pnpm tsc *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Usuario\\\\Documents\\\\Proyectos Python\\\\habit-tracker-webv2\" -Recurse -Force)"
     ]
   }
 }

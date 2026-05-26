@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useActivities } from '@/hooks/useActivities';
+import { useBooks } from '@/hooks/useBooks';
 import { usePomodoro, type PomodoroSettings, type PomodoroPhase } from '@/hooks/usePomodoro';
+import type { Book } from '@/types';
 import { Card } from '@/components/ui/Card';
 import { formatDuration, getMoodEmoji, getProductivityBars } from '@/lib/helpers';
 import {
@@ -37,12 +39,29 @@ export function TimerContent() {
   const { user } = useAuth();
   const userId = user?.id;
   const activities = useActivities(userId);
+  const books = useBooks(userId);
   const pomodoro = usePomodoro(userId);
   const activityList = activities.list.data ?? [];
+  const bookList = books.list.data ?? [];
+  const booksLoading = books.list.isLoading;
 
   const [showSettings, setShowSettings] = useState(false);
+  const [selectedBookId, setSelectedBookId] = useState('');
+  const [selectedBookTitle, setSelectedBookTitle] = useState('');
 
   const selectedActivity = activityList.find((a) => a.id === pomodoro.selectedActivityId);
+
+  useEffect(() => {
+    setSelectedBookId('');
+    setSelectedBookTitle('');
+  }, [pomodoro.selectedActivityId]);
+
+  const showBookPicker = Boolean(
+    selectedActivity &&
+      (selectedActivity.tipo === 'Lectura' ||
+        selectedActivity.name.toLowerCase().includes('lectura') ||
+        selectedActivity.name.toLowerCase().includes('libro')),
+  );
   const isInfinite = pomodoro.settings.timerMode === 'infinite';
   const phaseColor = isInfinite ? 'var(--color-accent)' : PHASE_COLORS[pomodoro.phase];
   const phaseLabel = isInfinite && pomodoro.phase === 'work'
@@ -213,6 +232,11 @@ export function TimerContent() {
                     sessionId={pomodoro.completedSessionId}
                     onSubmit={pomodoro.submitNotes}
                     onCancel={pomodoro.skipNotes}
+                    showBookPicker={showBookPicker}
+                    books={bookList}
+                    booksLoading={booksLoading}
+                    initialBookId={selectedBookId}
+                    initialBookTitle={selectedBookTitle}
                   />
                 </div>
               )}
@@ -247,6 +271,63 @@ export function TimerContent() {
                 ))
               )}
             </div>
+            {showBookPicker && (
+              <div className="mt-3 pt-3 border-t border-[var(--color-border)]">
+                <label className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider font-medium block mb-1.5">
+                  Libro
+                </label>
+                {booksLoading ? (
+                  <p className="text-xs text-[var(--color-text-muted)] py-1">Cargando biblioteca...</p>
+                ) : bookList.length > 0 ? (
+                  <div className="space-y-2">
+                    <select
+                      value={selectedBookId}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSelectedBookId(val);
+                        if (val === 'custom' || val === '') {
+                          setSelectedBookTitle('');
+                        } else {
+                          const found = bookList.find((b) => b.id === val);
+                          setSelectedBookTitle(found?.title ?? '');
+                        }
+                      }}
+                      className="w-full px-3 py-2 text-sm rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] border border-[var(--color-border)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20 transition-colors"
+                    >
+                      <option value="">-- Seleccionar libro --</option>
+                      {bookList.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.title}{b.author ? ` — ${b.author}` : ''}
+                        </option>
+                      ))}
+                      <option value="custom">Otro título...</option>
+                    </select>
+                    {selectedBookId === 'custom' && (
+                      <input
+                        type="text"
+                        value={selectedBookTitle}
+                        onChange={(e) => setSelectedBookTitle(e.target.value)}
+                        placeholder="Escribe el título del libro"
+                        className="w-full px-3 py-2 text-sm rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] border border-[var(--color-border)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20 transition-colors"
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    <input
+                      type="text"
+                      value={selectedBookTitle}
+                      onChange={(e) => setSelectedBookTitle(e.target.value)}
+                      placeholder="¿Qué libro vas a leer?"
+                      className="w-full px-3 py-2 text-sm rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] border border-[var(--color-border)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20 transition-colors"
+                    />
+                    <p className="text-[11px] text-[var(--color-text-muted)]">
+                      Agrega libros en Sesiones → Biblioteca para seleccionarlos aquí.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </Card>
 
           {!isInfinite && (
@@ -359,28 +440,84 @@ function SessionNotesForm({
   sessionId,
   onSubmit,
   onCancel,
+  showBookPicker = false,
+  books = [],
+  booksLoading = false,
+  initialBookId = '',
+  initialBookTitle = '',
 }: {
   sessionId: string;
   onSubmit: (data: { sessionId: string; notes: string; mood: number; productivity: number; bookTitle?: string }) => void;
   onCancel: () => void;
+  showBookPicker?: boolean;
+  books?: Book[];
+  booksLoading?: boolean;
+  initialBookId?: string;
+  initialBookTitle?: string;
 }) {
   const [notes, setNotes] = useState('');
   const [mood, setMood] = useState(3);
   const [productivity, setProductivity] = useState(3);
-  const [bookTitle, setBookTitle] = useState('');
+  const [bookId, setBookId] = useState(initialBookId);
+  const [bookTitle, setBookTitle] = useState(initialBookTitle);
 
   return (
     <div className="p-4 rounded-[var(--radius-lg)] bg-[var(--color-surface)] border border-[var(--color-border)] text-left space-y-4">
-      <div>
-        <label className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider font-medium">Libro (opcional)</label>
-        <input
-          type="text"
-          value={bookTitle}
-          onChange={(e) => setBookTitle(e.target.value)}
-          placeholder="¿Qué libro estabas leyendo?"
-          className="mt-1 w-full px-3 py-2 text-sm rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] border border-[var(--color-border)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20 transition-colors"
-        />
-      </div>
+      {showBookPicker && (
+        <div>
+          <label className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider font-medium">Libro</label>
+          {booksLoading ? (
+            <p className="mt-1 text-xs text-[var(--color-text-muted)] py-1">Cargando biblioteca...</p>
+          ) : books.length > 0 ? (
+            <div className="mt-1 space-y-2">
+              <select
+                value={bookId}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setBookId(val);
+                  if (val === 'custom' || val === '') {
+                    setBookTitle('');
+                  } else {
+                    const found = books.find((b) => b.id === val);
+                    setBookTitle(found?.title ?? '');
+                  }
+                }}
+                className="w-full px-3 py-2 text-sm rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] border border-[var(--color-border)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20 transition-colors"
+              >
+                <option value="">-- Seleccionar libro --</option>
+                {books.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.title}{b.author ? ` — ${b.author}` : ''}
+                  </option>
+                ))}
+                <option value="custom">Otro título...</option>
+              </select>
+              {bookId === 'custom' && (
+                <input
+                  type="text"
+                  value={bookTitle}
+                  onChange={(e) => setBookTitle(e.target.value)}
+                  placeholder="Escribe el título del libro"
+                  className="w-full px-3 py-2 text-sm rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] border border-[var(--color-border)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20 transition-colors"
+                />
+              )}
+            </div>
+          ) : (
+            <div className="mt-1 space-y-1.5">
+              <input
+                type="text"
+                value={bookTitle}
+                onChange={(e) => setBookTitle(e.target.value)}
+                placeholder="¿Qué libro estabas leyendo?"
+                className="w-full px-3 py-2 text-sm rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] border border-[var(--color-border)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20 transition-colors"
+              />
+              <p className="text-[11px] text-[var(--color-text-muted)]">
+                Agrega libros en Sesiones → Biblioteca para seleccionarlos aquí.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
       <div>
         <label className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider font-medium">Notas</label>
         <textarea

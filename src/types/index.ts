@@ -98,6 +98,14 @@ export interface Category {
   type: 'system' | 'personal';
 }
 
+export interface Book {
+  id: string;
+  user_id: string;
+  title: string;
+  author?: string;
+  created_at: string;
+}
+
 export interface HabitMetrics {
   habit_id: string;
   total_minutes_invested: number;

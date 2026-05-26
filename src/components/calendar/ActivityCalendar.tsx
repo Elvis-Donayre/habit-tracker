@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, ChevronRight, X, Clock, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Clock, Calendar, BookOpen } from 'lucide-react';
 import type { Session } from '@/types';
 import { formatDuration, getMoodEmoji } from '@/lib/helpers';
 import { Card } from '@/components/ui/Card';
@@ -255,6 +255,12 @@ export function ActivityCalendar({ sessions }: { sessions: Session[] }) {
                       <p className="text-sm font-medium truncate">
                         {session.activities?.name ?? 'Sesión sin nombre'}
                       </p>
+                      {session.book_title && (
+                        <p className="flex items-center gap-1 text-xs text-[var(--color-accent)] truncate mt-0.5">
+                          <BookOpen size={11} className="shrink-0" />
+                          {session.book_title}
+                        </p>
+                      )}
                       {session.notes && (
                         <p className="text-xs text-[var(--color-text-muted)] truncate mt-0.5">
                           {session.notes}

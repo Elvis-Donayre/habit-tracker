@@ -27,9 +27,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
         <main className="flex-1 min-w-0">
-          <div className="max-w-5xl mx-auto px-0 sm:px-6 lg:px-8 pt-4 pb-20 lg:pt-8 lg:pb-8">
+          <div className="max-w-5xl mx-auto px-0 sm:px-6 lg:px-8 pt-4 lg:pt-8 lg:pb-8">
             {children}
           </div>
+          {/* Spacer que empuja el contenido por encima de la barra inferior fija */}
+          <div
+            className="lg:hidden"
+            aria-hidden="true"
+            style={{ minHeight: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
+          />
         </main>
       </div>
       <BottomNav />
