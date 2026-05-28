@@ -1,21 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useActivities } from '@/hooks/useActivities';
 import { useBooks } from '@/hooks/useBooks';
 import { usePomodoro, type PomodoroSettings, type PomodoroPhase } from '@/hooks/usePomodoro';
-import type { Book } from '@/types';
+import type { Book, Activity } from '@/types';
 import { Card } from '@/components/ui/Card';
 import { formatDuration, getMoodEmoji, getProductivityBars } from '@/lib/helpers';
 import {
   Timer, Play, Pause, RotateCcw, SkipForward, Settings,
-  ChevronDown, ChevronUp, CheckCircle, Clock, Zap, Infinity, StopCircle,
+  ChevronDown, ChevronUp, CheckCircle, Clock, Zap, Infinity, StopCircle, Minimize2, Maximize2,
 } from 'lucide-react';
+import { FlipClock } from '@/components/timer/FlipClock';
 
 const PHASE_COLORS: Record<PomodoroPhase, string> = {
   idle: 'var(--color-accent)',
   work: 'var(--color-danger)',
   short_break: 'var(--color-success)',
   long_break: 'var(--color-info)',
+};
+
+const FULLSCREEN_PHASE_COLORS: Record<PomodoroPhase, string> = {
+  idle: '#6366f1',
+  work: '#ef4444',
+  short_break: '#22c55e',
+  long_break: '#38bdf8',
 };
 
 const PHASE_LABELS: Record<PomodoroPhase, string> = {
@@ -48,6 +56,18 @@ export function TimerContent() {
   const [showSettings, setShowSettings] = useState(false);
   const [selectedBookId, setSelectedBookId] = useState('');
   const [selectedBookTitle, setSelectedBookTitle] = useState('');
+  const [showFullscreen, setShowFullscreen] = useState(false);
+  const prevPhaseRef = useRef(pomodoro.phase);
+
+  useEffect(() => {
+    if (prevPhaseRef.current === 'idle' && pomodoro.phase !== 'idle') {
+      setShowFullscreen(true);
+    }
+    if (pomodoro.phase === 'idle' && !pomodoro.sessionCompleted) {
+      setShowFullscreen(false);
+    }
+    prevPhaseRef.current = pomodoro.phase;
+  }, [pomodoro.phase, pomodoro.sessionCompleted]);
 
   const selectedActivity = activityList.find((a) => a.id === pomodoro.selectedActivityId);
 
@@ -64,6 +84,7 @@ export function TimerContent() {
   );
   const isInfinite = pomodoro.settings.timerMode === 'infinite';
   const phaseColor = isInfinite ? 'var(--color-accent)' : PHASE_COLORS[pomodoro.phase];
+  const fsPhaseColor = isInfinite ? '#818cf8' : FULLSCREEN_PHASE_COLORS[pomodoro.phase];
   const phaseLabel = isInfinite && pomodoro.phase === 'work'
     ? INFINITE_PHASE_LABEL
     : PHASE_LABELS[pomodoro.phase];
@@ -71,7 +92,218 @@ export function TimerContent() {
   const circumference = 2 * Math.PI * 140;
   const strokeDashoffset = circumference - (pomodoro.progress / 100) * circumference;
 
+  const isTimerActive = pomodoro.phase !== 'idle';
+
   return (
+    <>
+    {/* ── Fullscreen flip-clock overlay ── */}
+    {showFullscreen && (
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 100,
+          background: '#080809',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 'clamp(16px, 3vh, 36px)',
+          padding: 'clamp(16px, 4vw, 48px)',
+          animation: 'fullscreenIn 0.25s ease-out',
+          overflowY: 'auto',
+        }}
+      >
+        {/* Minimize button */}
+        <button
+          onClick={() => setShowFullscreen(false)}
+          style={{
+            position: 'absolute',
+            top: 16,
+            right: 16,
+            background: 'rgba(255,255,255,0.07)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '10px',
+            color: '#888',
+            padding: '8px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'background 0.15s',
+          }}
+          title="Minimizar"
+        >
+          <Minimize2 size={18} />
+        </button>
+
+        {/* Phase label */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: fsPhaseColor }} />
+          <span
+            style={{
+              fontSize: 'clamp(11px, 1.8vmin, 14px)',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.12em',
+              color: fsPhaseColor,
+            }}
+          >
+            {phaseLabel}
+          </span>
+        </div>
+
+        {/* Flip clock */}
+        <FlipClock time={pomodoro.displayTime} />
+
+        {/* Activity + cycle info */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+          {selectedActivity && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Zap size={13} color="#444" />
+              <span style={{ fontSize: 'clamp(12px, 1.8vmin, 15px)', color: '#505058' }}>
+                {selectedActivity.name}
+              </span>
+            </div>
+          )}
+          {!isInfinite && (
+            <span style={{ fontSize: 'clamp(11px, 1.6vmin, 13px)', color: '#3a3a42' }}>
+              Ciclo {pomodoro.cycleCount + 1} de {pomodoro.settings.totalCycles}
+            </span>
+          )}
+        </div>
+
+        {/* Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(12px, 2vmin, 20px)' }}>
+          <button
+            onClick={pomodoro.reset}
+            style={{
+              width: 'clamp(44px, 8vmin, 56px)',
+              height: 'clamp(44px, 8vmin, 56px)',
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              color: '#666',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            title="Reiniciar"
+          >
+            <RotateCcw size={18} />
+          </button>
+
+          {pomodoro.isRunning ? (
+            <button
+              onClick={pomodoro.pause}
+              style={{
+                width: 'clamp(64px, 12vmin, 80px)',
+                height: 'clamp(64px, 12vmin, 80px)',
+                borderRadius: '50%',
+                background: fsPhaseColor,
+                border: 'none',
+                color: 'white',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: `0 0 32px ${fsPhaseColor}55`,
+              }}
+            >
+              <Pause size={28} />
+            </button>
+          ) : (
+            <button
+              onClick={pomodoro.start}
+              disabled={!pomodoro.selectedActivityId}
+              style={{
+                width: 'clamp(64px, 12vmin, 80px)',
+                height: 'clamp(64px, 12vmin, 80px)',
+                borderRadius: '50%',
+                background: pomodoro.selectedActivityId ? fsPhaseColor : '#2a2a2e',
+                border: 'none',
+                color: 'white',
+                cursor: pomodoro.selectedActivityId ? 'pointer' : 'not-allowed',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: pomodoro.selectedActivityId ? `0 0 32px ${fsPhaseColor}55` : 'none',
+              }}
+            >
+              <Play size={28} style={{ marginLeft: 3 }} />
+            </button>
+          )}
+
+          {!isInfinite && (pomodoro.phase === 'work' || pomodoro.phase === 'short_break' || pomodoro.phase === 'long_break') && (
+            <button
+              onClick={pomodoro.skip}
+              style={{
+                width: 'clamp(44px, 8vmin, 56px)',
+                height: 'clamp(44px, 8vmin, 56px)',
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: '#666',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              title="Saltar fase"
+            >
+              <SkipForward size={18} />
+            </button>
+          )}
+          {isInfinite && pomodoro.phase === 'work' && (
+            <button
+              onClick={pomodoro.finishInfinite}
+              style={{
+                width: 'clamp(44px, 8vmin, 56px)',
+                height: 'clamp(44px, 8vmin, 56px)',
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: '#ef4444',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              title="Finalizar y guardar"
+            >
+              <StopCircle size={18} />
+            </button>
+          )}
+        </div>
+
+        {/* Post-session notes form */}
+        {pomodoro.sessionCompleted && pomodoro.completedSessionId && (
+          <div style={{ width: '100%', maxWidth: '480px' }}>
+            <div
+              className="alert-success"
+              style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}
+            >
+              <CheckCircle size={16} />
+              <span style={{ fontSize: 14, fontWeight: 500 }}>¡Sesión completada! Registra tus notas</span>
+            </div>
+            <SessionNotesForm
+              sessionId={pomodoro.completedSessionId}
+              onSubmit={pomodoro.submitNotes}
+              onCancel={pomodoro.skipNotes}
+              showBookPicker={showBookPicker}
+              books={bookList}
+              booksLoading={booksLoading}
+              initialBookId={selectedBookId}
+              initialBookTitle={selectedBookTitle}
+              activityList={activityList.filter((a) => a.id !== pomodoro.selectedActivityId)}
+              maxDuration={pomodoro.pendingDurationMinutes}
+            />
+          </div>
+        )}
+      </div>
+    )}
+
     <div className="space-y-6 page-enter">
       <div className="flex items-center justify-between">
         <h1 className="text-[1.65rem] font-bold tracking-tight flex items-center gap-2.5">
@@ -80,14 +312,25 @@ export function TimerContent() {
           </span>
           Temporizador
         </h1>
-        <button
-          onClick={() => setShowSettings(!showSettings)}
-          className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-[var(--radius-md)] border border-[var(--color-border)] hover-surface transition-colors"
-        >
-          <Settings size={14} />
-          Configuración
-          {showSettings ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </button>
+        <div className="flex items-center gap-2">
+          {isTimerActive && (
+            <button
+              onClick={() => setShowFullscreen(true)}
+              className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-[var(--radius-md)] border border-[var(--color-border)] hover-surface transition-colors"
+              title="Ver en pantalla completa"
+            >
+              <Maximize2 size={14} />
+            </button>
+          )}
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-[var(--radius-md)] border border-[var(--color-border)] hover-surface transition-colors"
+          >
+            <Settings size={14} />
+            Configuración
+            {showSettings ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+        </div>
       </div>
 
       {showSettings && (
@@ -237,6 +480,8 @@ export function TimerContent() {
                     booksLoading={booksLoading}
                     initialBookId={selectedBookId}
                     initialBookTitle={selectedBookTitle}
+                    activityList={activityList.filter((a) => a.id !== pomodoro.selectedActivityId)}
+                    maxDuration={pomodoro.pendingDurationMinutes}
                   />
                 </div>
               )}
@@ -379,6 +624,7 @@ export function TimerContent() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 
@@ -445,21 +691,27 @@ function SessionNotesForm({
   booksLoading = false,
   initialBookId = '',
   initialBookTitle = '',
+  activityList = [],
+  maxDuration = 0,
 }: {
   sessionId: string;
-  onSubmit: (data: { sessionId: string; notes: string; mood: number; productivity: number; bookTitle?: string }) => void;
+  onSubmit: (data: { sessionId: string; notes: string; mood: number; productivity: number; bookTitle?: string; englishMinutes?: number; englishActivityId?: string }) => void;
   onCancel: () => void;
   showBookPicker?: boolean;
   books?: Book[];
   booksLoading?: boolean;
   initialBookId?: string;
   initialBookTitle?: string;
+  activityList?: Activity[];
+  maxDuration?: number;
 }) {
   const [notes, setNotes] = useState('');
   const [mood, setMood] = useState(3);
   const [productivity, setProductivity] = useState(3);
   const [bookId, setBookId] = useState(initialBookId);
   const [bookTitle, setBookTitle] = useState(initialBookTitle);
+  const [englishMinutes, setEnglishMinutes] = useState<number | ''>('');
+  const [englishActivityId, setEnglishActivityId] = useState('');
 
   return (
     <div className="p-4 rounded-[var(--radius-lg)] bg-[var(--color-surface)] border border-[var(--color-border)] text-left space-y-4">
@@ -518,6 +770,39 @@ function SessionNotesForm({
           )}
         </div>
       )}
+      {activityList.length > 0 && (
+        <div className="space-y-2">
+          <label className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider font-medium block">
+            ¿Minutos en inglés? <span className="normal-case">(opcional)</span>
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="number"
+              value={englishMinutes}
+              onChange={(e) => setEnglishMinutes(e.target.value === '' ? '' : Number(e.target.value))}
+              min={1}
+              max={maxDuration || undefined}
+              placeholder="—"
+              className="w-full px-3 py-2 text-sm rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] border border-[var(--color-border)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20 transition-colors font-[var(--font-mono)]"
+            />
+            <select
+              value={englishActivityId}
+              onChange={(e) => setEnglishActivityId(e.target.value)}
+              className="w-full px-3 py-2 text-sm rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] border border-[var(--color-border)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20 transition-colors"
+            >
+              <option value="">-- Actividad --</option>
+              {activityList.map((a) => (
+                <option key={a.id} value={a.id}>{a.name}</option>
+              ))}
+            </select>
+          </div>
+          {englishMinutes !== '' && englishMinutes > 0 && englishActivityId && (
+            <p className="text-[11px] text-[var(--color-text-muted)]">
+              💡 +{englishMinutes} min en &quot;{activityList.find((a) => a.id === englishActivityId)?.name}&quot;
+            </p>
+          )}
+        </div>
+      )}
       <div>
         <label className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider font-medium">Notas</label>
         <textarea
@@ -567,7 +852,15 @@ function SessionNotesForm({
       </div>
       <div className="flex gap-2">
         <button
-          onClick={() => onSubmit({ sessionId, notes, mood, productivity, bookTitle: bookTitle.trim() || undefined })}
+          onClick={() => onSubmit({
+            sessionId,
+            notes,
+            mood,
+            productivity,
+            bookTitle: bookTitle.trim() || undefined,
+            englishMinutes: englishMinutes !== '' && englishMinutes > 0 ? englishMinutes : undefined,
+            englishActivityId: englishActivityId || undefined,
+          })}
           className="flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-medium text-white rounded-[var(--radius-md)] transition-all duration-150 active:scale-[0.97]"
           style={{ backgroundColor: 'var(--color-accent)' }}
         >

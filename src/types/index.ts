@@ -29,7 +29,7 @@ export interface HabitProgress {
   is_active: boolean;
   total_minutes_invested: number;
   total_sessions: number;
-  completed_sessions: number;
+  completed_sessions?: number;
   current_streak: number;
   longest_streak: number;
   completion_percentage: number;
@@ -87,7 +87,7 @@ export interface ActivityHabitMatrix {
   actividad_nombre: string;
   dia_semana: string;
   total_sesiones: number;
-  sesiones_completadas: number;
+  sesiones_completadas?: number;
   total_minutos?: number;
 }
 

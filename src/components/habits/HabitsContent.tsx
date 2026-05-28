@@ -6,7 +6,7 @@ import { Tabs } from '@/components/ui/Tabs';
 import { Card, MetricCard } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
 import { formatDuration, calculateWeeksToGoal, categorizeCompletion } from '@/lib/helpers';
-import { Plus, List, Target, Edit2, Pause, Play, Trash2, Zap } from 'lucide-react';
+import { Plus, List, Target, Edit2, Pause, Play, Trash2, Zap, Clock } from 'lucide-react';
 
 export function HabitsContent() {
   const { user } = useAuth();
@@ -107,45 +107,56 @@ function CreateHabitForm({ userId, habits }: { userId: string; habits: ReturnTyp
     setLoading(false);
   };
 
+  const inputCls = 'w-full px-4 py-2.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-colors';
+  const labelCls = 'block text-[11px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-1.5';
+
   return (
-    <Card className="p-5">
-      <h3 className="text-lg font-semibold mb-6">Crear Nueva Meta Personalizada</h3>
-      <form onSubmit={handleSubmit} className="space-y-6">
+    <Card className="p-6">
+      <h3 className="text-base font-semibold mb-6">Crear Nueva Meta</h3>
+      <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
-          <div className="p-3 rounded-[var(--radius-md)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/20 text-[var(--color-danger)] text-sm">{error}</div>
+          <div className="p-3 rounded-[var(--radius-md)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/20 text-[var(--color-danger)] text-sm flex items-center gap-2">
+            <span aria-hidden>⚠</span> {error}
+          </div>
         )}
         {success && (
-          <div className="p-3 rounded-[var(--radius-md)] bg-[var(--color-success-soft)] border border-[var(--color-success)]/20 text-[var(--color-success)] text-sm">{success}</div>
+          <div className="p-3 rounded-[var(--radius-md)] bg-[var(--color-success-soft)] border border-[var(--color-success)]/20 text-[var(--color-success)] text-sm flex items-center gap-2">
+            <span aria-hidden>✓</span> {success}
+          </div>
         )}
 
         <div>
-          <label className="block text-sm font-medium mb-1.5">¿Cuál es tu meta?</label>
+          <label className={labelCls}>
+            ¿Cuál es tu meta? <span className="text-[var(--color-danger)]">*</span>
+          </label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Ej: Aprender italiano, Escribir una novela, Meditar 30 min diarios"
             maxLength={255}
-            className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            className={inputCls}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1.5">Descripción (opcional)</label>
+          <label className={labelCls}>
+            Descripción <span className="normal-case font-normal tracking-normal">(opcional)</span>
+          </label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Da contexto sobre por qué esta meta es importante para ti"
             maxLength={1000}
             rows={3}
-            className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] resize-none"
+            className={`${inputCls} resize-none`}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1.5 flex items-center gap-1.5">
-            <Zap size={14} className="text-[var(--color-accent)]" />
-            Actividad inicial (opcional)
+          <label className={labelCls + ' flex items-center gap-1.5'}>
+            <Zap size={11} className="text-[var(--color-accent)]" />
+            Actividad inicial <span className="normal-case font-normal tracking-normal">(opcional)</span>
           </label>
           <input
             type="text"
@@ -153,55 +164,46 @@ function CreateHabitForm({ userId, habits }: { userId: string; habits: ReturnTyp
             onChange={(e) => setInitialActivity(e.target.value)}
             placeholder="Ej: Estudiar vocabulario, Practicar ejercicios..."
             maxLength={255}
-            className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            className={inputCls}
           />
-          <p className="text-xs text-[var(--color-text-muted)] mt-1">
+          <p className="text-[11px] text-[var(--color-text-muted)] mt-1.5">
             Se creará la actividad y se vinculará automáticamente a este hábito
           </p>
         </div>
 
-        <div className="border-t border-[var(--color-border)] pt-6">
-          <p className="text-sm font-medium mb-4">Configura tus objetivos</p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs text-[var(--color-text-muted)] mb-1">Target semanal (minutos)</label>
-              <input
-                type="number"
-                value={targetWeekly}
-                onChange={(e) => setTargetWeekly(Number(e.target.value))}
-                min={30}
-                max={10000}
-                step={30}
-                className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] font-[var(--font-mono)] text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-[var(--color-text-muted)] mb-1">Máximo semanal (minutos)</label>
-              <input
-                type="number"
-                value={maxWeekly}
-                onChange={(e) => setMaxWeekly(Number(e.target.value))}
-                min={60}
-                max={10000}
-                step={30}
-                className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] font-[var(--font-mono)] text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-[var(--color-text-muted)] mb-1">Objetivo total (horas)</label>
-              <input
-                type="number"
-                value={totalGoal}
-                onChange={(e) => setTotalGoal(Number(e.target.value))}
-                min={10}
-                max={10000}
-                step={10}
-                className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] font-[var(--font-mono)] text-sm"
-              />
-            </div>
+        {/* Objetivos de tiempo — stepper cards */}
+        <div className="space-y-3 pt-1">
+          <p className="text-[11px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
+            Objetivos de tiempo
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <StepperCard
+              icon={<Clock size={14} />}
+              label="Target semanal"
+              sublabel="mínimo recomendado"
+              display={formatDuration(targetWeekly)}
+              onDecrement={() => setTargetWeekly(Math.max(30, targetWeekly - 30))}
+              onIncrement={() => setTargetWeekly(Math.min(10000, targetWeekly + 30))}
+            />
+            <StepperCard
+              icon={<Zap size={14} />}
+              label="Máximo semanal"
+              sublabel="techo de dedicación"
+              display={formatDuration(maxWeekly)}
+              onDecrement={() => setMaxWeekly(Math.max(60, maxWeekly - 30))}
+              onIncrement={() => setMaxWeekly(Math.min(10000, maxWeekly + 30))}
+            />
+            <StepperCard
+              icon={<Target size={14} />}
+              label="Objetivo total"
+              sublabel="meta de largo plazo"
+              display={`${totalGoal}h`}
+              onDecrement={() => setTotalGoal(Math.max(10, totalGoal - 10))}
+              onIncrement={() => setTotalGoal(Math.min(10000, totalGoal + 10))}
+            />
           </div>
           {targetWeekly > 0 && (
-            <div className="alert-info mt-3 text-sm">
+            <div className="alert-info text-sm">
               Con <strong>{formatDuration(targetWeekly)}/semana</strong>, completarás {totalGoal}h en ~<strong>{weeks} semanas</strong> ({estimatedDate})
             </div>
           )}
@@ -210,7 +212,7 @@ function CreateHabitForm({ userId, habits }: { userId: string; habits: ReturnTyp
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 bg-[var(--color-accent)] text-white rounded-lg font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+          className="w-full py-3 bg-[var(--color-accent)] text-white rounded-[var(--radius-md)] font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-50 transition-all flex items-center justify-center gap-2"
         >
           {loading ? 'Creando...' : 'Crear Meta'}
         </button>
@@ -402,6 +404,46 @@ function HabitList({ userId, habits }: { userId: string; habits: ReturnType<type
   );
 }
 
+function StepperCard({
+  icon,
+  label,
+  sublabel,
+  display,
+  onDecrement,
+  onIncrement,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  sublabel: string;
+  display: string;
+  onDecrement: () => void;
+  onIncrement: () => void;
+}) {
+  const btnCls =
+    'w-7 h-7 rounded-full border border-[var(--color-border)] flex items-center justify-center text-[var(--color-text-muted)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] hover:bg-[var(--color-accent-soft)] transition-all text-base leading-none select-none';
+
+  return (
+    <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 flex flex-col gap-3 shadow-[var(--shadow-xs)]">
+      <div className="flex items-center gap-2">
+        <span className="w-6 h-6 rounded-[var(--radius-sm)] bg-[var(--color-accent-soft)] flex items-center justify-center text-[var(--color-accent)] shrink-0">
+          {icon}
+        </span>
+        <div>
+          <p className="text-[11px] font-semibold text-[var(--color-text)] leading-tight">{label}</p>
+          <p className="text-[10px] text-[var(--color-text-muted)]">{sublabel}</p>
+        </div>
+      </div>
+      <div className="flex items-center justify-between">
+        <button type="button" onClick={onDecrement} className={btnCls}>−</button>
+        <span className="text-sm font-bold text-[var(--color-text)] font-[var(--font-mono)] tracking-tight">
+          {display}
+        </span>
+        <button type="button" onClick={onIncrement} className={btnCls}>+</button>
+      </div>
+    </div>
+  );
+}
+
 function EditHabitForm({
   habit,
   onSave,
@@ -417,50 +459,74 @@ function EditHabitForm({
   const [max, setMax] = useState(habit.max_minutes_per_week);
   const [goal, setGoal] = useState(habit.total_hours_goal);
 
+  const inputCls = 'w-full px-3 py-2 text-sm rounded-[var(--radius-md)] bg-[var(--color-surface)] border border-[var(--color-border)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20 focus:outline-none transition-colors';
+  const labelCls = 'block text-[11px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-1.5';
+
   return (
     <div className="mt-4 pt-4 border-t border-[var(--color-border)] space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <p className="text-[11px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
+        Editar hábito
+      </p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs text-[var(--color-text-muted)] mb-1">Nombre</label>
+          <label className={labelCls}>Nombre</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            className={inputCls}
           />
         </div>
         <div>
-          <label className="block text-xs text-[var(--color-text-muted)] mb-1">Descripción</label>
+          <label className={labelCls}>Descripción</label>
           <input
             type="text"
             value={desc}
             onChange={(e) => setDesc(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            className={inputCls}
           />
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-4">
-        <div>
-          <label className="block text-xs text-[var(--color-text-muted)] mb-1">Target/sem (min)</label>
-          <input type="number" value={target} onChange={(e) => setTarget(Number(e.target.value))} min={30} className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] font-[var(--font-mono)]" />
-        </div>
-        <div>
-          <label className="block text-xs text-[var(--color-text-muted)] mb-1">Máx/sem (min)</label>
-          <input type="number" value={max} onChange={(e) => setMax(Number(e.target.value))} min={60} className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] font-[var(--font-mono)]" />
-        </div>
-        <div>
-          <label className="block text-xs text-[var(--color-text-muted)] mb-1">Objetivo (h)</label>
-          <input type="number" value={goal} onChange={(e) => setGoal(Number(e.target.value))} min={10} className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] font-[var(--font-mono)]" />
-        </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <StepperCard
+          icon={<Clock size={14} />}
+          label="Target semanal"
+          sublabel="mínimo / semana"
+          display={formatDuration(target)}
+          onDecrement={() => setTarget(Math.max(30, target - 30))}
+          onIncrement={() => setTarget(Math.min(10000, target + 30))}
+        />
+        <StepperCard
+          icon={<Zap size={14} />}
+          label="Máximo semanal"
+          sublabel="techo / semana"
+          display={formatDuration(max)}
+          onDecrement={() => setMax(Math.max(60, max - 30))}
+          onIncrement={() => setMax(Math.min(10000, max + 30))}
+        />
+        <StepperCard
+          icon={<Target size={14} />}
+          label="Objetivo total"
+          sublabel="meta final"
+          display={`${goal}h`}
+          onDecrement={() => setGoal(Math.max(10, goal - 10))}
+          onIncrement={() => setGoal(Math.min(10000, goal + 10))}
+        />
       </div>
+
       <div className="flex gap-2">
         <button
           onClick={() => onSave({ name, description: desc, target_minutes_per_week: target, max_minutes_per_week: max, total_hours_goal: goal })}
-          className="px-4 py-2 text-sm font-semibold bg-[var(--color-accent)] text-white rounded-lg hover:bg-[var(--color-accent-hover)]"
+          className="px-4 py-2 text-sm font-semibold bg-[var(--color-accent)] text-white rounded-[var(--radius-md)] hover:bg-[var(--color-accent-hover)] transition-colors"
         >
           Guardar
         </button>
-        <button onClick={onCancel} className="px-4 py-2 text-sm font-medium rounded-[var(--radius-md)] border border-[var(--color-border)] hover-surface transition-colors">
+        <button
+          onClick={onCancel}
+          className="px-4 py-2 text-sm font-medium rounded-[var(--radius-md)] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+        >
           Cancelar
         </button>
       </div>

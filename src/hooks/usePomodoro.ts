@@ -357,12 +357,16 @@ export function usePomodoro(userId: string | undefined) {
     mood,
     productivity,
     bookTitle,
+    englishMinutes,
+    englishActivityId,
   }: {
     sessionId: string;
     notes: string;
     mood: number;
     productivity: number;
     bookTitle?: string;
+    englishMinutes?: number;
+    englishActivityId?: string;
   }) => {
     if (!pendingSession) return;
     registerSession.mutate({
@@ -374,6 +378,15 @@ export function usePomodoro(userId: string | undefined) {
       notes,
       bookTitle,
     });
+    if (englishMinutes && englishMinutes > 0 && englishActivityId) {
+      registerSession.mutate({
+        activityId: englishActivityId,
+        durationMinutes: englishMinutes,
+        startTime: pendingSession.startTime,
+        mood,
+        productivityLevel: productivity,
+      });
+    }
     setPendingSession(null);
   }, [pendingSession, registerSession]);
 
@@ -428,6 +441,7 @@ export function usePomodoro(userId: string | undefined) {
     isRunning,
     sessionCompleted: pendingSession !== null,
     completedSessionId: pendingSession?.startTime ?? null,
+    pendingDurationMinutes: pendingSession?.durationMinutes ?? 0,
     submitNotes,
     skipNotes,
   };

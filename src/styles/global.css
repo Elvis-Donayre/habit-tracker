@@ -222,6 +222,21 @@ input, select, textarea, button {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes flipTop {
+  from { transform: rotateX(0deg); }
+  to   { transform: rotateX(-90deg); }
+}
+
+@keyframes flipBottom {
+  from { transform: rotateX(90deg); }
+  to   { transform: rotateX(0deg); }
+}
+
+@keyframes fullscreenIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 /* Stagger animation utility */
 .stagger-1 { animation-delay: 50ms; }
 .stagger-2 { animation-delay: 100ms; }

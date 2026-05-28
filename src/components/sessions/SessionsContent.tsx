@@ -55,6 +55,8 @@ function NewSessionForm({ userId }: { userId: string }) {
   const [notes, setNotes] = useState('');
   const [bookId, setBookId] = useState('');
   const [bookTitle, setBookTitle] = useState('');
+  const [englishMinutes, setEnglishMinutes] = useState<number | ''>('');
+  const [englishActivityId, setEnglishActivityId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -89,6 +91,14 @@ function NewSessionForm({ userId }: { userId: string }) {
       setError('Selecciona una actividad');
       return;
     }
+    if (englishMinutes !== '' && englishMinutes > duration) {
+      setError('Los minutos en inglés no pueden superar la duración total');
+      return;
+    }
+    if (englishMinutes !== '' && englishMinutes > 0 && !englishActivityId) {
+      setError('Selecciona la actividad donde registrar los minutos en inglés');
+      return;
+    }
     setLoading(true);
     try {
       await sessions.register.mutateAsync({
@@ -100,10 +110,25 @@ function NewSessionForm({ userId }: { userId: string }) {
         notes: notes.trim() || undefined,
         book_title: bookTitle.trim() || undefined,
       });
-      setSuccess(`¡Sesión registrada! ${duration} minutos en ${selectedActivity?.name}`);
+      if (englishMinutes !== '' && englishMinutes > 0 && englishActivityId) {
+        await sessions.register.mutateAsync({
+          activity_id: englishActivityId,
+          duration_minutes: englishMinutes,
+          session_date: sessionDate,
+          mood,
+          productivity_level: productivity,
+        });
+      }
+      const englishActivity = activityList.find((a) => a.id === englishActivityId);
+      const englishNote = englishMinutes && englishActivityId
+        ? ` · ${englishMinutes} min en ${englishActivity?.name}`
+        : '';
+      setSuccess(`¡Sesión registrada! ${duration} minutos en ${selectedActivity?.name}${englishNote}`);
       setNotes('');
       setBookId('');
       setBookTitle('');
+      setEnglishMinutes('');
+      setEnglishActivityId('');
       setTimeout(() => setSuccess(''), 5000);
     } catch {
       setError('Error registrando sesión');
@@ -180,6 +205,45 @@ function NewSessionForm({ userId }: { userId: string }) {
                 className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
               />
             </div>
+          </div>
+
+          <div className="rounded-lg border border-[var(--color-border)] p-4 space-y-3">
+            <p className="text-sm font-medium">
+              ¿Parte del tiempo fue en inglés?{' '}
+              <span className="text-xs text-[var(--color-text-muted)] font-normal">(opcional)</span>
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-[var(--color-text-muted)] mb-1.5">Minutos en inglés</label>
+                <input
+                  type="number"
+                  value={englishMinutes}
+                  onChange={(e) => setEnglishMinutes(e.target.value === '' ? '' : Number(e.target.value))}
+                  min={1}
+                  max={duration}
+                  placeholder="—"
+                  className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] font-[var(--font-mono)]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[var(--color-text-muted)] mb-1.5">Registrar en</label>
+                <select
+                  value={englishActivityId}
+                  onChange={(e) => setEnglishActivityId(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+                >
+                  <option value="">-- Actividad --</option>
+                  {activityList.filter((a) => a.id !== activityId).map((a) => (
+                    <option key={a.id} value={a.id}>{a.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            {englishMinutes !== '' && englishMinutes > 0 && englishActivityId && (
+              <p className="text-xs text-[var(--color-text-muted)]">
+                💡 Se creará un registro adicional de {englishMinutes} min en &quot;{activityList.find((a) => a.id === englishActivityId)?.name}&quot;
+              </p>
+            )}
           </div>
 
           <div className="border-t border-[var(--color-border)] pt-6">
@@ -287,6 +351,9 @@ function NewSessionForm({ userId }: { userId: string }) {
               <div>
                 <p className="text-xs text-[var(--color-text-muted)]">Duración</p>
                 <p className="text-sm font-semibold">{formatDuration(duration)}</p>
+                {englishMinutes !== '' && englishMinutes > 0 && englishActivityId && (
+                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">+ {englishMinutes} min inglés</p>
+                )}
               </div>
               <div>
                 <p className="text-xs text-[var(--color-text-muted)]">Fecha</p>

@@ -69,7 +69,7 @@ GRANT SELECT ON activity_habit_matrix TO authenticated;`}</pre>
     const existing = aggregated.get(p.actividad_nombre) || { total: 0, completed: 0 };
     aggregated.set(p.actividad_nombre, {
       total: existing.total + p.total_sessions,
-      completed: existing.completed + p.completed_sessions,
+      completed: existing.completed + (p.completed_sessions ?? p.total_sessions),
     });
   });
   const uniqueProgress = Array.from(aggregated.entries()).map(([name, data]) => ({
@@ -87,7 +87,7 @@ GRANT SELECT ON activity_habit_matrix TO authenticated;`}</pre>
   const completionsByDay = new Map<string, number>();
   matrixData.forEach((entry) => {
     totalsByDay.set(entry.dia_semana, (totalsByDay.get(entry.dia_semana) || 0) + entry.total_sesiones);
-    completionsByDay.set(entry.dia_semana, (completionsByDay.get(entry.dia_semana) || 0) + entry.sesiones_completadas);
+    completionsByDay.set(entry.dia_semana, (completionsByDay.get(entry.dia_semana) || 0) + (entry.sesiones_completadas ?? entry.total_sesiones));
   });
   const maxTotal = Math.max(...weekDays.map((d) => totalsByDay.get(d) || 0), 1);
 

@@ -12,6 +12,12 @@ import { Bar, Doughnut } from 'react-chartjs-2';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
+function resolveCssColor(value: string): string {
+  if (typeof window === 'undefined' || !value.startsWith('var(')) return value;
+  const varName = value.slice(4, -1).split(',')[0].trim();
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || value;
+}
+
 function getChartTheme() {
   const isDark = document.documentElement.classList.contains('dark');
   return {
@@ -39,7 +45,7 @@ export function CompletionChart({
     datasets: [
       {
         data: values,
-        backgroundColor: colors,
+        backgroundColor: colors.map(resolveCssColor),
         borderColor: 'transparent',
         borderRadius: 8,
         borderSkipped: false,
