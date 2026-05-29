@@ -13,7 +13,8 @@
       "Bash(pnpm tsc *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Usuario\\\\Documents\\\\Proyectos Python\\\\habit-tracker-webv2\" -Recurse -Force)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Usuario\\\\Documents\\\\Proyectos Python\\\\habit-tracker-webv2\\\\src\\\\components\" -Recurse)",
-      "Bash(Select-Object Name, FullName)"
+      "Bash(Select-Object Name, FullName)",
+      "PowerShell(pnpm astro *)"
     ]
   }
 }

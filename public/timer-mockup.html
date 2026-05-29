@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Temporizador & Inmersión · Habit Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #FAF6F1;
+    --surface: #FFFEFC;
+    --border: #EBE2D6;
+    --text: #241E18;
+    --muted: #7A7066;
+    --accent: #E0653B;
+    --accent-hover: #C9542D;
+    --accent-soft: rgba(224,101,59,0.08);
+    --success: #2F8F6B;
+    --success-soft: rgba(47,143,107,0.10);
+    --info: #0C8AA8;
+    --shadow-sm: 0 1px 3px rgba(36,30,24,0.06), 0 1px 2px rgba(36,30,24,0.04);
+    --shadow-md: 0 4px 10px -2px rgba(36,30,24,0.08), 0 2px 6px -2px rgba(36,30,24,0.05);
+    --shadow-lg: 0 18px 30px -10px rgba(36,30,24,0.14), 0 8px 16px -8px rgba(36,30,24,0.08);
+    --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 20px;
+  }
+  .dark {
+    --bg: #16120E; --surface: #1E1813; --border: #342A22;
+    --text: #F0E9E1; --muted: #A2978B; --accent-soft: rgba(224,101,59,0.14);
+    --success-soft: rgba(47,143,107,0.16);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+    --shadow-md: 0 6px 16px -4px rgba(0,0,0,0.5);
+    --shadow-lg: 0 24px 40px -12px rgba(0,0,0,0.6);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Inter", system-ui, sans-serif; background: var(--bg); color: var(--text);
+    -webkit-font-smoothing: antialiased; font-feature-settings: "cv02","cv03","cv04","cv11";
+    transition: background 0.3s, color 0.3s; min-height: 100vh;
+  }
+  .mono { font-family: "JetBrains Mono", monospace; }
+  .clabel { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; color: var(--muted); }
+
+  .section-tag {
+    position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+    background: var(--text); color: var(--bg); font-size: 12px; font-weight: 600;
+    padding: 6px 14px; border-radius: 99px; z-index: 50; box-shadow: var(--shadow-md);
+  }
+
+  .page { max-width: 1080px; margin: 0 auto; padding: 64px 24px 80px; }
+  .head { text-align: center; margin-bottom: 32px; }
+  .head .icon { width: 46px; height: 46px; border-radius: 14px; margin: 0 auto 14px;
+    background: linear-gradient(135deg, var(--accent), #F0905F); display: grid; place-items: center; color: white;
+    box-shadow: 0 8px 20px -4px rgba(224,101,59,0.5); }
+  .head h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.025em; }
+  .head p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+
+  .grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 22px; align-items: start; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); padding: 24px; }
+
+  /* mode tabs */
+  .tabs { display: inline-flex; background: var(--accent-soft); padding: 4px; border-radius: 99px; gap: 2px; margin: 0 auto 26px; }
+  .tab { padding: 8px 18px; border-radius: 99px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; border: none; background: transparent; transition: all 0.18s; }
+  .tab.active { background: var(--surface); color: var(--accent); box-shadow: var(--shadow-sm); }
+
+  /* main timer card */
+  .timer-card { display: flex; flex-direction: column; align-items: center;
+    background: radial-gradient(130% 100% at 50% 0%, var(--accent-soft) 0%, transparent 60%), var(--surface); }
+  .activity-chip { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 99px;
+    background: var(--accent-soft); color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; }
+  .ring-wrap { position: relative; width: 300px; height: 300px; margin: 22px 0 8px; }
+  .ring-wrap .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .ring-wrap .time { font-size: 4.4rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
+  .ring-wrap .phase { margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; }
+  .ring-wrap .cycles { margin-top: 12px; display: flex; gap: 7px; }
+  .ring-wrap .cyc { width: 9px; height: 9px; border-radius: 99px; background: var(--border); }
+  .ring-wrap .cyc.done { background: var(--accent); }
+  .ring-wrap .cyc.active { background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+
+  .controls { display: flex; align-items: center; gap: 16px; margin-top: 18px; }
+  .ctrl { width: 52px; height: 52px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    display: grid; place-items: center; cursor: pointer; transition: all 0.15s; }
+  .ctrl:hover { background: color-mix(in srgb, var(--text) 5%, transparent); transform: translateY(-2px); }
+  .ctrl.play { width: 76px; height: 76px; background: var(--accent); border: none; color: white;
+    box-shadow: 0 10px 26px -6px rgba(224,101,59,0.6); }
+  .ctrl.play:hover { background: var(--accent-hover); transform: translateY(-2px) scale(1.03); }
+
+  .immerse-btn { margin-top: 22px; display: inline-flex; align-items: center; gap: 9px; padding: 11px 22px; border-radius: 99px;
+    background: var(--text); color: var(--bg); font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+  .immerse-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+  /* side column */
+  .side { display: flex; flex-direction: column; gap: 22px; }
+  .setting-row { display: flex; align-items: center; justify-content: space-between; padding: 13px 0; border-bottom: 1px solid var(--border); }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-row .lbl { font-size: 14px; font-weight: 500; }
+  .setting-row .lbl small { display: block; color: var(--muted); font-size: 12px; font-weight: 400; margin-top: 2px; }
+  .stepper { display: inline-flex; align-items: center; gap: 0; border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden; }
+  .stepper button { width: 32px; height: 34px; border: none; background: var(--surface); color: var(--text); font-size: 17px; cursor: pointer; }
+  .stepper button:hover { background: var(--accent-soft); color: var(--accent); }
+  .stepper .v { width: 48px; text-align: center; font-weight: 600; font-size: 14px; }
+  .switch { width: 42px; height: 24px; border-radius: 99px; background: var(--accent); position: relative; cursor: pointer; }
+  .switch::after { content:''; position: absolute; top: 3px; right: 3px; width: 18px; height: 18px; border-radius: 99px; background: white; }
+  .switch.off { background: var(--border); }
+  .switch.off::after { left: 3px; right: auto; }
+
+  .stat-mini { display: flex; align-items: center; gap: 12px; }
+  .stat-mini .ic { width: 38px; height: 38px; border-radius: var(--r-md); display: grid; place-items: center; flex-shrink: 0; }
+  .stat-mini .v { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
+  .stat-mini .l { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+
+  .session-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .session-row:last-child { border-bottom: none; }
+  .session-row .dot { width: 8px; height: 8px; border-radius: 99px; }
+  .session-row .nm { flex: 1; font-weight: 500; }
+  .session-row .du { color: var(--muted); }
+
+  /* ---------- IMMERSION OVERLAY ---------- */
+  .immersion {
+    position: fixed; inset: 0; z-index: 100; display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    background:
+      radial-gradient(60% 60% at 50% 38%, rgba(224,101,59,0.16) 0%, transparent 70%),
+      #120D09;
+    color: #F5EDE4; overflow: hidden;
+  }
+  .immersion.show { display: flex; animation: fade 0.5s ease; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  .immersion .glow { position: absolute; width: 760px; height: 760px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(224,101,59,0.18) 0%, transparent 65%);
+    animation: breathe 7s ease-in-out infinite; filter: blur(8px); }
+  @keyframes breathe { 0%,100% { transform: scale(0.85); opacity: 0.6; } 50% { transform: scale(1.1); opacity: 1; } }
+  .immersion .activity { position: relative; font-size: 14px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(245,237,228,0.6); margin-bottom: 26px; }
+  .immersion .big-time { position: relative; font-size: 9rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1;
+    text-shadow: 0 8px 40px rgba(224,101,59,0.3); }
+  .immersion .phase { position: relative; margin-top: 18px; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  .immersion .imm-controls { position: relative; display: flex; gap: 18px; margin-top: 50px; }
+  .immersion .ic-btn { width: 54px; height: 54px; border-radius: 99px; border: 1px solid rgba(245,237,228,0.18);
+    background: rgba(255,255,255,0.04); color: #F5EDE4; display: grid; place-items: center; cursor: pointer; transition: all 0.15s; backdrop-filter: blur(6px); }
+  .immersion .ic-btn:hover { background: rgba(255,255,255,0.1); }
+  .immersion .ic-btn.play { width: 72px; height: 72px; background: var(--accent); border: none; box-shadow: 0 12px 30px -6px rgba(224,101,59,0.6); }
+  .immersion .exit { position: absolute; top: 28px; right: 32px; background: rgba(255,255,255,0.06); border: 1px solid rgba(245,237,228,0.15);
+    color: rgba(245,237,228,0.8); padding: 9px 16px; border-radius: 99px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; gap: 7px; align-items: center; }
+  .immersion .hint { position: absolute; bottom: 34px; font-size: 12px; color: rgba(245,237,228,0.4); letter-spacing: 0.05em; }
+  .immersion .session-progress { position: relative; margin-top: 30px; display: flex; gap: 9px; }
+  .immersion .session-progress .cyc { width: 10px; height: 10px; border-radius: 99px; background: rgba(245,237,228,0.2); }
+  .immersion .session-progress .cyc.done { background: var(--accent); }
+  .immersion .session-progress .cyc.active { background: var(--accent); box-shadow: 0 0 0 5px rgba(224,101,59,0.2); }
+
+  /* flip clock mini preview */
+  .flip { display: inline-flex; gap: 6px; }
+  .flip .digit { background: var(--text); color: var(--bg); font-family: "JetBrains Mono", monospace; font-weight: 700;
+    font-size: 2.4rem; padding: 10px 12px; border-radius: 10px; position: relative; box-shadow: var(--shadow-md); }
+  .flip .digit::after { content:''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(255,255,255,0.12); }
+  .flip .colon { font-size: 2.2rem; font-weight: 700; align-self: center; color: var(--muted); }
+
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="section-tag">Mockup · Temporizador & Inmersión (Warm Momentum)</div>
+
+<div class="page">
+  <div class="head">
+    <div class="icon"><svg width="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9 2h6M12 5V2"/></svg></div>
+    <h1>Sesión de enfoque</h1>
+    <p>Elige una actividad, ajusta tu ciclo y entra en modo inmersión.</p>
+  </div>
+
+  <div style="display:flex; justify-content:center;">
+    <div class="tabs">
+      <button class="tab active">Pomodoro</button>
+      <button class="tab">Cuenta infinita</button>
+      <button class="tab">Flip clock</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- MAIN TIMER -->
+    <div class="card timer-card">
+      <div class="activity-chip">
+        <span style="width:9px;height:9px;border-radius:99px;background:var(--accent);display:inline-block;"></span>
+        Estudiar · Programación
+        <svg width="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+
+      <div class="ring-wrap">
+        <svg width="300" height="300" viewBox="0 0 300 300">
+          <circle cx="150" cy="150" r="132" fill="none" stroke="var(--border)" stroke-width="14"/>
+          <circle cx="150" cy="150" r="132" fill="none" stroke="var(--accent)" stroke-width="14" stroke-linecap="round"
+                  stroke-dasharray="829" stroke-dashoffset="207" transform="rotate(-90 150 150)"/>
+        </svg>
+        <div class="center">
+          <div class="time mono">18:42</div>
+          <div class="phase">Enfoque</div>
+          <div class="cycles">
+            <span class="cyc done"></span><span class="cyc active"></span><span class="cyc"></span><span class="cyc"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="ctrl" title="Reiniciar"><svg width="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12a9 9 0 109-9 9 9 0 00-7 3.3"/><path d="M3 3v4h4"/></svg></button>
+        <button class="ctrl play" title="Pausar"><svg width="26" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
+        <button class="ctrl" title="Saltar"><svg width="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 4l10 8-10 8z"/><path d="M19 5v14"/></svg></button>
+      </div>
+
+      <button class="immerse-btn" id="enterImmersion">
+        <svg width="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 00-2 2v3M21 8V5a2 2 0 00-2-2h-3M3 16v3a2 2 0 002 2h3M16 21h3a2 2 0 002-2v-3"/></svg>
+        Entrar en inmersión
+      </button>
+    </div>
+
+    <!-- SIDE -->
+    <div class="side">
+      <!-- settings -->
+      <div class="card">
+        <span class="clabel">Configuración del ciclo</span>
+        <div style="margin-top:14px;">
+          <div class="setting-row">
+            <div class="lbl">Enfoque <small>duración de trabajo</small></div>
+            <div class="stepper"><button>−</button><span class="v mono">25 m</span><button>+</button></div>
+          </div>
+          <div class="setting-row">
+            <div class="lbl">Pausa corta <small>entre ciclos</small></div>
+            <div class="stepper"><button>−</button><span class="v mono">5 m</span><button>+</button></div>
+          </div>
+          <div class="setting-row">
+            <div class="lbl">Pausa larga <small>cada 4 ciclos</small></div>
+            <div class="stepper"><button>−</button><span class="v mono">15 m</span><button>+</button></div>
+          </div>
+          <div class="setting-row">
+            <div class="lbl">Sonido al terminar</div>
+            <div class="switch"></div>
+          </div>
+          <div class="setting-row">
+            <div class="lbl">Vibración <small>móvil</small></div>
+            <div class="switch"></div>
+          </div>
+          <div class="setting-row">
+            <div class="lbl">Mantener pantalla activa <small>wake lock</small></div>
+            <div class="switch off"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- today stats -->
+      <div class="card">
+        <span class="clabel">Hoy</span>
+        <div class="stat-grid" style="margin-top:16px;">
+          <div class="stat-mini">
+            <div class="ic" style="background:var(--accent-soft); color:var(--accent)"><svg width="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+            <div><div class="v mono">3h 02m</div><div class="l">enfocado</div></div>
+          </div>
+          <div class="stat-mini">
+            <div class="ic" style="background:var(--success-soft); color:var(--success)"><svg width="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+            <div><div class="v mono">7</div><div class="l">sesiones</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- recent sessions -->
+      <div class="card">
+        <span class="clabel">Sesiones recientes</span>
+        <div style="margin-top:10px;">
+          <div class="session-row"><span class="dot" style="background:var(--accent)"></span><span class="nm">Programación</span><span class="du mono">25 min</span></div>
+          <div class="session-row"><span class="dot" style="background:var(--info)"></span><span class="nm">Lectura técnica</span><span class="du mono">50 min</span></div>
+          <div class="session-row"><span class="dot" style="background:var(--success)"></span><span class="nm">Ejercicio</span><span class="du mono">30 min</span></div>
+          <div class="session-row"><span class="dot" style="background:var(--accent)"></span><span class="nm">Programación</span><span class="du mono">25 min</span></div>
+        </div>
+      </div>
+
+      <!-- flip clock preview -->
+      <div class="card" style="text-align:center;">
+        <span class="clabel">Vista flip clock</span>
+        <div style="margin-top:16px; display:flex; justify-content:center;">
+          <div class="flip">
+            <span class="digit">1</span><span class="digit">8</span>
+            <span class="colon">:</span>
+            <span class="digit">4</span><span class="digit">2</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- IMMERSION FULLSCREEN -->
+<div class="immersion" id="immersion">
+  <div class="glow"></div>
+  <button class="exit" id="exitImmersion">
+    <svg width="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    Salir
+  </button>
+  <div class="activity">Estudiar · Programación</div>
+  <div class="big-time mono">18:42</div>
+  <div class="phase">Enfoque · ciclo 2 de 4</div>
+  <div class="session-progress">
+    <span class="cyc done"></span><span class="cyc active"></span><span class="cyc"></span><span class="cyc"></span>
+  </div>
+  <div class="imm-controls">
+    <button class="ic-btn"><svg width="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12a9 9 0 109-9 9 9 0 00-7 3.3"/><path d="M3 3v4h4"/></svg></button>
+    <button class="ic-btn play"><svg width="24" fill="white" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
+    <button class="ic-btn"><svg width="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 4l10 8-10 8z"/><path d="M19 5v14"/></svg></button>
+  </div>
+  <div class="hint">El fondo respira con tu sesión · pulsa Esc o "Salir" para volver</div>
+</div>
+
+<!-- theme toggle floating -->
+<button id="themeToggle" style="position:fixed; bottom:20px; right:20px; z-index:60; width:46px; height:46px; border-radius:99px; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; box-shadow:var(--shadow-md);">
+  <svg width="20" style="margin:auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>
+</button>
+
+<script>
+  const imm = document.getElementById('immersion');
+  document.getElementById('enterImmersion').addEventListener('click', () => imm.classList.add('show'));
+  document.getElementById('exitImmersion').addEventListener('click', () => imm.classList.remove('show'));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') imm.classList.remove('show'); });
+  document.getElementById('themeToggle').addEventListener('click', () => document.documentElement.classList.toggle('dark'));
+</script>
+</body>
+</html>

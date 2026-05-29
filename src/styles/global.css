@@ -1,30 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
 /*EDITMODE-BEGIN*/
-/*{"accentColor":"#2D5BFF","radiusScale":1,"density":1}EDITMODE-END*/
+/*{"accentColor":"#E0653B","radiusScale":1,"density":1}EDITMODE-END*/
 
 @theme {
-  --font-display: "Geist", "Satoshi", system-ui, sans-serif;
-  --font-mono: "Geist Mono", "JetBrains Mono", monospace;
+  --font-display: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Geist Mono", monospace;
 
-  --color-bg: #F6F5F2;
-  --color-bg-dark: #0A0A0B;
-  --color-surface: #FFFFFE;
-  --color-surface-dark: #131316;
-  --color-surface-raised: #FFFFFE;
-  --color-surface-raised-dark: #1A1A1F;
-  --color-border: #E4E2DD;
-  --color-border-dark: #232328;
-  --color-text: #171717;
-  --color-text-dark: #ECECEA;
-  --color-text-muted: #6F6E6B;
-  --color-accent: #2D5BFF;
-  --color-accent-hover: #1A47E8;
-  --color-accent-soft: rgba(45, 91, 255, 0.07);
-  --color-success: #0A8F62;
-  --color-success-soft: rgba(10, 143, 98, 0.07);
+  /* Palette: Warm Momentum — crema + terracota */
+  --color-bg: #FAF6F1;
+  --color-bg-dark: #16120E;
+  --color-surface: #FFFEFC;
+  --color-surface-dark: #1E1813;
+  --color-surface-raised: #FFFEFC;
+  --color-surface-raised-dark: #251E18;
+  --color-border: #EBE2D6;
+  --color-border-dark: #342A22;
+  --color-text: #241E18;
+  --color-text-dark: #F0E9E1;
+  --color-text-muted: #7A7066;
+  --color-accent: #E0653B;
+  --color-accent-hover: #C9542D;
+  --color-accent-soft: rgba(224, 101, 59, 0.07);
+  --color-success: #2F8F6B;
+  --color-success-soft: rgba(47, 143, 107, 0.08);
   --color-warning: #C07D15;
-  --color-warning-soft: rgba(192, 125, 21, 0.07);
+  --color-warning-soft: rgba(192, 125, 21, 0.08);
   --color-danger: #D43030;
   --color-danger-soft: rgba(212, 48, 48, 0.07);
   --color-info: #0C8AA8;
@@ -51,57 +53,19 @@
   --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.4), 0 8px 10px -6px rgba(0,0,0,0.2);
 }
 
-@font-face {
-  font-family: "Geist";
-  src: url("https://cdn.jsdelivr.net/npm/geist@1.3.0/dist/fonts/geist-sans/Geist-Regular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
+/* Fonts: Inter (display/body) + JetBrains Mono (data/timer) loaded via @import above */
 
-@font-face {
-  font-family: "Geist";
-  src: url("https://cdn.jsdelivr.net/npm/geist@1.3.0/dist/fonts/geist-sans/Geist-Medium.woff2") format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Geist";
-  src: url("https://cdn.jsdelivr.net/npm/geist@1.3.0/dist/fonts/geist-sans/Geist-SemiBold.woff2") format("woff2");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Geist";
-  src: url("https://cdn.jsdelivr.net/npm/geist@1.3.0/dist/fonts/geist-sans/Geist-Bold.woff2") format("woff2");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Geist Mono";
-  src: url("https://cdn.jsdelivr.net/npm/geist@1.3.0/dist/fonts/geist-mono/GeistMono-Regular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* NOTE: Do NOT add an unlayered `* { margin:0; padding:0 }` reset here.
+   Tailwind v4's preflight already resets these inside @layer base, where
+   utilities (px-*, p-*, m-*) can override them. An unlayered universal
+   reset wins over ALL @layer rules and silently zeroes every spacing
+   utility app-wide. */
 
 html {
   font-family: var(--font-display);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-feature-settings: "ss01", "ss02", "cv01";
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
 body {
@@ -237,6 +201,20 @@ input, select, textarea, button {
   to   { opacity: 1; }
 }
 
+@keyframes breathe {
+  0%, 100% { transform: scale(0.85); opacity: 0.55; }
+  50%      { transform: scale(1.1);  opacity: 1; }
+}
+
+/* Card hover-lift (bento cards) */
+.card-lift {
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease;
+}
+.card-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
 /* Stagger animation utility */
 .stagger-1 { animation-delay: 50ms; }
 .stagger-2 { animation-delay: 100ms; }
@@ -291,7 +269,7 @@ textarea::placeholder {
 
 /* EDITMODE live overrides */
 :root {
-  --ocd-tweak-accent-color: #2D5BFF;
+  --ocd-tweak-accent-color: #E0653B;
   --ocd-tweak-radius-scale: 1;
   --ocd-tweak-density: 1;
 }
@@ -476,7 +454,7 @@ textarea::placeholder {
 
 /* EDITMODE live-tweak overrides */
 :root {
-  --ocd-tweak-accent-color: #2D5BFF;
+  --ocd-tweak-accent-color: #E0653B;
   --ocd-tweak-radius-scale: 1;
   --ocd-tweak-density: 1;
   --ocd-tweak-dark-mode: 0;

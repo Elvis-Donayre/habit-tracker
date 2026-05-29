@@ -27,7 +27,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
         <main className="flex-1 min-w-0">
-          <div className="max-w-5xl mx-auto px-0 sm:px-6 lg:px-8 pt-4 lg:pt-8 lg:pb-8">
+          <div className="max-w-6xl mx-auto px-5 sm:px-6 lg:px-8 pt-5 lg:pt-8 pb-8">
             {children}
           </div>
           {/* Spacer que empuja el contenido por encima de la barra inferior fija */}

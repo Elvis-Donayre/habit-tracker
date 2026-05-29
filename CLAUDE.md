@@ -54,7 +54,7 @@ Key design tokens (from DESIGN.md):
 |---------|-------|
 | Page background | `var(--color-bg)` |
 | Card surface | `var(--color-surface)` |
-| Primary accent | `var(--color-accent)` (#2D5BFF) |
+| Primary accent | `var(--color-accent)` (#E0653B terracota) |
 | Muted text | `var(--color-text-muted)` |
 
 Utility classes defined in `global.css`: `.page-enter`, `.stagger-enter`, `.badge-success`, `.badge-warning`, `.badge-danger`, `.badge-info`, `.focus-ring`.

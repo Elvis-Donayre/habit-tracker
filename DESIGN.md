@@ -9,17 +9,19 @@ Spanish-language habit tracking and pomodoro timer app built with Astro + React 
 
 ## Colors
 
+Palette: **Warm Momentum** (crema + terracota).
+
 | Token | Light | Dark |
 |-------|-------|------|
-| bg | `#F6F5F2` | `#0A0A0B` |
-| surface | `#FFFFFE` | `#131316` |
-| surface-raised | `#FFFFFE` | `#1A1A1F` |
-| border | `#E4E2DD` | `#232328` |
-| text | `#171717` | `#ECECEA` |
-| text-muted | `#6F6E6B` | `#989894` |
-| accent | `#2D5BFF` | `#2D5BFF` |
-| accent-hover | `#1A47E8` | `#1A47E8` |
-| success | `#0A8F62` | `#0A8F62` |
+| bg | `#FAF6F1` | `#16120E` |
+| surface | `#FFFEFC` | `#1E1813` |
+| surface-raised | `#FFFEFC` | `#251E18` |
+| border | `#EBE2D6` | `#342A22` |
+| text | `#241E18` | `#F0E9E1` |
+| text-muted | `#7A7066` | `#989894` |
+| accent | `#E0653B` | `#E0653B` |
+| accent-hover | `#C9542D` | `#C9542D` |
+| success | `#2F8F6B` | `#2F8F6B` |
 | warning | `#C07D15` | `#C07D15` |
 | danger | `#D43030` | `#D43030` |
 | info | `#0C8AA8` | `#0C8AA8` |
@@ -28,8 +30,8 @@ Dark mode is handled via `.dark` class on `<html>`. CSS custom properties auto-s
 
 ## Typography
 
-- **Display / Body:** Geist, Satoshi, system-ui
-- **Mono:** Geist Mono, JetBrains Mono
+- **Display / Body:** Inter, system-ui
+- **Mono (data/timer):** JetBrains Mono, Geist Mono
 - **Headings:** font-bold, tracking-tight
 - **Body:** 13-14px base, 1.5 line-height
 - **Labels:** 11px, uppercase, tracking-0.06em, text-muted
