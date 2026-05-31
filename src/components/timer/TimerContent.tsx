@@ -474,13 +474,6 @@ export function TimerContent() {
                 )}
               </div>
             </SideCard>
-
-            {/* Flip clock preview */}
-            <SideCard label="Vista flip clock">
-              <div className="mt-4 flex justify-center">
-                <FlipDisplay time={pomodoro.displayTime} size="sm" />
-              </div>
-            </SideCard>
           </div>
         </div>
       </div>

@@ -4,9 +4,12 @@ import { useActivities } from '@/hooks/useActivities';
 import { useSessions } from '@/hooks/useSessions';
 import { Tabs } from '@/components/ui/Tabs';
 import { Card, MetricCard } from '@/components/ui/Card';
+import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
 import { formatDuration, formatDateSpanish, getMoodEmoji, getProductivityBars } from '@/lib/helpers';
 import { Plus, List, BookOpen, Clock, TrendingUp, Download, Book, Trash2, Library } from 'lucide-react';
 import { useBooks } from '@/hooks/useBooks';
+import type { Session } from '@/types';
 
 export function SessionsContent() {
   const { user } = useAuth();
@@ -380,6 +383,17 @@ function SessionHistory({ userId }: { userId: string }) {
   const sessionList = sessions.list.data ?? [];
 
   const [period, setPeriod] = useState('7');
+  const [toDelete, setToDelete] = useState<Session | null>(null);
+
+  const handleConfirmDelete = async () => {
+    if (!toDelete?.id) return;
+    try {
+      await sessions.remove.mutateAsync(toDelete.id);
+      setToDelete(null);
+    } catch {
+      // mantener el modal abierto si falla
+    }
+  };
 
   const now = new Date();
   const cutoff = new Date();
@@ -463,6 +477,7 @@ function SessionHistory({ userId }: { userId: string }) {
                     <th className="text-center py-2 font-medium text-[var(--color-text-muted)]">Mood</th>
                     <th className="text-center py-2 font-medium text-[var(--color-text-muted)]">Prod.</th>
                     <th className="text-left py-2 font-medium text-[var(--color-text-muted)]">Notas</th>
+                    <th className="text-right py-2 font-medium text-[var(--color-text-muted)] sr-only">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -475,6 +490,16 @@ function SessionHistory({ userId }: { userId: string }) {
                       <td className="py-2.5 text-center">{s.mood ? getMoodEmoji(s.mood) : '—'}</td>
                       <td className="py-2.5 text-center font-[var(--font-mono)] text-xs">{s.productivity_level ?? '—'}</td>
                       <td className="py-2.5 text-xs text-[var(--color-text-muted)] max-w-[200px] truncate">{s.notes ?? ''}</td>
+                      <td className="py-2.5 text-right">
+                        <button
+                          onClick={() => setToDelete(s)}
+                          className="p-1.5 rounded-[var(--radius-sm)] text-[var(--color-text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors"
+                          aria-label="Eliminar sesión"
+                          title="Eliminar sesión"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -483,6 +508,32 @@ function SessionHistory({ userId }: { userId: string }) {
           </Card>
         </>
       )}
+
+      <Modal
+        open={toDelete !== null}
+        onClose={() => setToDelete(null)}
+        title="Eliminar sesión"
+      >
+        <div className="space-y-5">
+          <p className="text-sm text-[var(--color-text-muted)]">
+            ¿Seguro que quieres eliminar esta sesión
+            {toDelete?.activities?.name ? (
+              <> de <span className="font-medium text-[var(--color-text)]">{toDelete.activities.name}</span></>
+            ) : null}
+            {toDelete ? <> del {toDelete.session_date}</> : null}
+            ? Esta acción no se puede deshacer.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setToDelete(null)} disabled={sessions.remove.isPending}>
+              Cancelar
+            </Button>
+            <Button variant="danger" onClick={handleConfirmDelete} loading={sessions.remove.isPending}>
+              <Trash2 size={16} />
+              Eliminar
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

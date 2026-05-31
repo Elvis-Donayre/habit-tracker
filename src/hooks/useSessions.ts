@@ -52,5 +52,19 @@ export function useSessions(userId: string | undefined) {
     },
   });
 
-  return { list, weeklySummary, register };
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('sessions').delete().eq('id', id);
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sessions', userId] });
+      qc.invalidateQueries({ queryKey: ['weekly-summary', userId] });
+      qc.invalidateQueries({ queryKey: ['habit-progress', userId] });
+      qc.invalidateQueries({ queryKey: ['activity-matrix', userId] });
+    },
+  });
+
+  return { list, weeklySummary, register, remove };
 }
