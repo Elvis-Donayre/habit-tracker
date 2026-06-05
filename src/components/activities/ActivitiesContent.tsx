@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useActivities } from '@/hooks/useActivities';
+import { useSessions } from '@/hooks/useSessions';
 import { ActivityForm } from './ActivityForm';
 import { ActivityMatrix } from './ActivityMatrix';
 import { Card } from '@/components/ui/Card';
@@ -12,29 +13,60 @@ export function ActivitiesContent() {
   const userId = user?.id;
   const activities = useActivities(userId);
   const { data: activityList, isLoading, isError, error } = activities.list;
-  const matrixData = activities.matrix.data ?? [];
+  const { list: sessionsQuery } = useSessions(userId);
+  const sessions = sessionsQuery.data ?? [];
 
-  const [activityStats, setActivityStats] = useState<Record<string, { total_sessions?: number; benefited_habits?: string }>>({});
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!activityList) return;
-
-    const stats: Record<string, { total_sessions?: number; benefited_habits?: string }> = {};
-    activityList.forEach((act) => {
-      const relatedEntries = matrixData.filter((m) => m.actividad_nombre === act.name);
-      const totalSessions = relatedEntries.reduce((sum, entry) => sum + (entry.total_sesiones || 0), 0);
-      stats[act.id] = {
-        total_sessions: totalSessions,
-        benefited_habits: act.description || undefined,
-      };
-    });
-    setActivityStats(stats);
-  }, [activityList, matrixData]);
-
   const [searchTerm, setSearchTerm] = useState('');
+
+  const weekDays = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+
+  // Everything below is derived from real sessions (the activity_habit_matrix
+  // view returns no rows in the current data model).
+  const statsById = new Map<string, { sessions: number; minutes: number }>();
+  const matrixByActivity = new Map<
+    string,
+    { days: number[]; minutes: number[]; total: number; totalMin: number }
+  >();
+  sessions.forEach((s) => {
+    const ds = (s.session_date ?? '').slice(0, 10);
+    if (!ds) return;
+
+    const byId = statsById.get(s.activity_id) ?? { sessions: 0, minutes: 0 };
+    byId.sessions += 1;
+    byId.minutes += s.duration_minutes ?? 0;
+    statsById.set(s.activity_id, byId);
+
+    const name = s.activities?.name;
+    if (!name) return;
+    const wd = (new Date(`${ds}T00:00:00`).getDay() + 6) % 7; // Mon→Sun
+    let row = matrixByActivity.get(name);
+    if (!row) {
+      row = { days: Array(7).fill(0), minutes: Array(7).fill(0), total: 0, totalMin: 0 };
+      matrixByActivity.set(name, row);
+    }
+    row.days[wd] += 1;
+    row.minutes[wd] += s.duration_minutes ?? 0;
+    row.total += 1;
+    row.totalMin += s.duration_minutes ?? 0;
+  });
+  const matrixRows = Array.from(matrixByActivity.entries())
+    .map(([name, d]) => ({ name, ...d }))
+    .sort((a, b) => b.total - a.total);
+
+  // Distinct activities with at least one session in the current week (Mon→Sun)
+  const weekStart = new Date();
+  weekStart.setHours(0, 0, 0, 0);
+  weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
+  const activeThisWeek = new Set(
+    sessions
+      .filter((s) => new Date(`${(s.session_date ?? '').slice(0, 10)}T00:00:00`) >= weekStart)
+      .map((s) => s.activity_id)
+  ).size;
+  const totalSessions = sessions.length;
+
   const filteredActivities = (activityList || []).filter((act) =>
     act.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -67,7 +99,6 @@ export function ActivitiesContent() {
   }
 
   const totalCount = activityList?.length || 0;
-  const weekDays = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
   return (
     <div className="space-y-6 page-enter">
@@ -113,7 +144,7 @@ export function ActivitiesContent() {
             <div>
               <span className="text-[11px] uppercase font-semibold tracking-wide text-[var(--color-text-muted)]">Esta semana</span>
               <p className="text-2xl font-bold text-[var(--color-success)]">
-                {new Set(matrixData.filter((m) => m.total_sesiones > 0).map((m) => m.actividad_nombre)).size}
+                {activeThisWeek}
               </p>
             </div>
             <div className="w-8 h-8 rounded-[var(--radius-md)] bg-[var(--color-success-soft)] flex items-center justify-center">
@@ -126,7 +157,7 @@ export function ActivitiesContent() {
             <div>
               <span className="text-[11px] uppercase font-semibold tracking-wide text-[var(--color-text-muted)]">Sesiones totales</span>
               <p className="text-2xl font-bold text-[var(--color-warning)]">
-                {matrixData.reduce((sum, m) => sum + (m.total_sesiones || 0), 0)}
+                {totalSessions}
               </p>
             </div>
             <div className="w-8 h-8 rounded-[var(--radius-md)] bg-[var(--color-warning-soft)] flex items-center justify-center">
@@ -179,7 +210,7 @@ export function ActivitiesContent() {
 
       <div className="space-y-3 stagger-enter">
         {filteredActivities.map((activity, index) => {
-          const stats = activityStats[activity.id];
+          const stats = statsById.get(activity.id);
 
           return (
             <div key={activity.id}>
@@ -228,16 +259,16 @@ export function ActivitiesContent() {
                           {activity.valor_objetivo} {activity.valor_objetivo_unidad}
                         </span>
                       )}
-                      {stats?.total_sessions !== undefined && (
+                      {stats && stats.sessions > 0 && (
                         <span className="flex items-center gap-1">
                           <BarChart size={12} />
-                          {stats.total_sessions} sesiones totales
+                          {stats.sessions} {stats.sessions === 1 ? 'sesión' : 'sesiones'} · {stats.minutes} min
                         </span>
                       )}
                     </div>
-                    {stats?.benefited_habits && (
+                    {activity.description && (
                       <div className="alert-success text-xs p-2">
-                        Beneficia: {stats.benefited_habits}
+                        Beneficia: {activity.description}
                       </div>
                     )}
                   </div>
@@ -317,13 +348,13 @@ export function ActivitiesContent() {
         )}
       </div>
 
-      {matrixData.length > 0 && (
+      {matrixRows.length > 0 && (
         <div>
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <BarChart size={18} className="text-[var(--color-accent)]" />
             Matriz semanal
           </h2>
-          <ActivityMatrix data={matrixData} weekDays={weekDays} />
+          <ActivityMatrix rows={matrixRows} weekDays={weekDays} />
         </div>
       )}
     </div>

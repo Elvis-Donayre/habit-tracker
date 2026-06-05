@@ -78,7 +78,7 @@ function CreateHabitForm({ userId, habits }: { userId: string; habits: ReturnTyp
       });
 
       if (initialActivity.trim() && result) {
-        const { data: activity } = await activities.create.mutateAsync({
+        const activity = await activities.create.mutateAsync({
           user_id: userId,
           name: initialActivity.trim(),
         });

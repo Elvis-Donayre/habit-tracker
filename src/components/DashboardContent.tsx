@@ -9,7 +9,7 @@ import { Sparkline } from '@/components/ui/Sparkline';
 import { StreakHeatmap } from '@/components/ui/StreakHeatmap';
 import { CompletionChart } from '@/components/charts/Charts';
 import { ActivityCalendar } from '@/components/calendar/ActivityCalendar';
-import { formatDuration, categorizeCompletion, calculateWeeklyCompliance, getBarColor } from '@/lib/helpers';
+import { formatDuration, calculateWeeklyCompliance, getBarColor } from '@/lib/helpers';
 import { Target, Clock, TrendingUp, Activity, Flame, CheckCircle2, Plus, ArrowRight } from 'lucide-react';
 
 const WEEK_DAYS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
@@ -19,19 +19,54 @@ function isoDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+// Current streak = consecutive active days ending today (or yesterday, so a
+// streak still counts before today's session is logged).
+function currentStreakFromDays(days: Set<string>): number {
+  let streak = 0;
+  const cursor = new Date();
+  if (!days.has(isoDate(cursor))) cursor.setDate(cursor.getDate() - 1);
+  while (days.has(isoDate(cursor))) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
+// Longest run of consecutive active days across the whole history.
+function longestStreakFromDays(days: Set<string>): number {
+  const sorted = Array.from(days).sort();
+  let longest = 0;
+  let run = 0;
+  let prev: number | null = null;
+  for (const ds of sorted) {
+    const t = new Date(`${ds}T00:00:00`).getTime();
+    run = prev !== null && Math.round((t - prev) / 86400000) === 1 ? run + 1 : 1;
+    longest = Math.max(longest, run);
+    prev = t;
+  }
+  return longest;
+}
+
 export function DashboardContent() {
   const { user } = useAuth();
   const userId = user?.id;
-  const { progress } = useHabits(userId);
-  const { matrix } = useActivities(userId);
+  const { list: habitsList, links } = useHabits(userId);
+  const { list: activitiesList } = useActivities(userId);
   const { weeklySummary, list: sessionsList } = useSessions(userId);
 
-  const progressData = progress.data ?? [];
+  // Dashboard metrics are derived from the base tables (habits, activities,
+  // sessions, habit_activities) rather than the habit_progress /
+  // activity_habit_matrix views, which return no rows in the current
+  // activity-based data model. Streaks come from real session dates — the same
+  // source the activity calendar uses — because habit_metrics is never
+  // recalculated after a session is registered.
+  const habitsData = habitsList.data ?? [];
+  const linksData = links.data ?? [];
+  const activitiesData = activitiesList.data ?? [];
   const weeklyData = weeklySummary.data ?? [];
-  const matrixData = matrix.data ?? [];
   const sessionsData = sessionsList.data ?? [];
 
-  if (progress.isLoading || matrix.isLoading || weeklySummary.isLoading) {
+  if (habitsList.isLoading || sessionsList.isLoading) {
     return (
       <div className="space-y-6 animate-pulse">
         <div className="h-8 w-48 bg-[var(--color-border)] rounded-[var(--radius-md)]" />
@@ -45,7 +80,7 @@ export function DashboardContent() {
     );
   }
 
-  const firstError = progress.error || matrix.error || weeklySummary.error;
+  const firstError = habitsList.error || sessionsList.error;
   if (firstError) {
     const msg = (firstError as any)?.message ?? String(firstError);
     const isPermissionError = msg.includes('403') || msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('forbidden');
@@ -71,31 +106,43 @@ GRANT SELECT ON activity_habit_matrix TO authenticated;`}</pre>
     );
   }
 
-  // ---- Per-activity aggregation (used by progreso tab + distribution) ----
-  const aggregated = new Map<string, { total: number; completed: number }>();
-  progressData.forEach((p) => {
-    const existing = aggregated.get(p.actividad_nombre) || { total: 0, completed: 0 };
-    aggregated.set(p.actividad_nombre, {
-      total: existing.total + p.total_sessions,
-      completed: existing.completed + (p.completed_sessions ?? p.total_sessions),
-    });
+  // ---- Per-activity aggregation from real sessions (progreso tab + distribution) ----
+  const activityAgg = new Map<string, { sessions: number; minutes: number }>();
+  sessionsData.forEach((s) => {
+    const name = s.activities?.name;
+    if (!name) return;
+    const existing = activityAgg.get(name) ?? { sessions: 0, minutes: 0 };
+    existing.sessions += 1;
+    existing.minutes += s.duration_minutes ?? 0;
+    activityAgg.set(name, existing);
   });
-  const uniqueProgress = Array.from(aggregated.entries()).map(([name, data]) => ({
-    actividad_nombre: name,
-    total_sessions: data.total,
-    completed_sessions: data.completed,
-  }));
+  const totalActivityMinutes = Array.from(activityAgg.values()).reduce((s, a) => s + a.minutes, 0);
+  const activityStats = Array.from(activityAgg.entries())
+    .map(([name, d]) => ({
+      name,
+      sessions: d.sessions,
+      minutes: d.minutes,
+      avg: d.sessions ? Math.round(d.minutes / d.sessions) : 0,
+      sharePct: totalActivityMinutes > 0 ? Math.round((d.minutes / totalActivityMinutes) * 100) : 0,
+    }))
+    .sort((a, b) => b.minutes - a.minutes);
 
-  // ---- Daily focus minutes from sessions ----
+  // ---- Daily focus minutes + active days per activity, from sessions ----
   const minutesByDate = new Map<string, number>();
-  const namesCompletedToday = new Set<string>();
+  const daysByActivity = new Map<string, Set<string>>();
   const todayStr = isoDate(new Date());
   sessionsData.forEach((s) => {
     const d = (s.session_date ?? '').slice(0, 10);
     if (!d) return;
     minutesByDate.set(d, (minutesByDate.get(d) ?? 0) + (s.duration_minutes ?? 0));
-    if (d === todayStr && s.activities?.name) namesCompletedToday.add(s.activities.name);
+    let set = daysByActivity.get(s.activity_id);
+    if (!set) {
+      set = new Set();
+      daysByActivity.set(s.activity_id, set);
+    }
+    set.add(d);
   });
+  const activeDays = new Set(minutesByDate.keys());
 
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
@@ -111,17 +158,18 @@ GRANT SELECT ON activity_habit_matrix TO authenticated;`}</pre>
     sparkData.push(minutesByDate.get(isoDate(d)) ?? 0);
   }
 
-  // ---- Streak (max across habits) ----
-  const currentStreak = progressData.reduce((m, p) => Math.max(m, p.current_streak ?? 0), 0);
-  const longestStreak = progressData.reduce((m, p) => Math.max(m, p.longest_streak ?? 0), 0);
+  // ---- Streak from real session dates (same source as the activity calendar) ----
+  const currentStreak = currentStreakFromDays(activeDays);
+  const longestStreak = longestStreakFromDays(activeDays);
   const nextMilestone = STREAK_MILESTONES.find((m) => m > currentStreak) ?? currentStreak + 1;
   const milestonePct = Math.min(Math.round((currentStreak / nextMilestone) * 100), 100);
 
-  // ---- Today's ring (sessions completed vs planned today, from matrix) ----
-  const todayLetter = WEEK_DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
-  const todayMatrix = matrixData.filter((e) => e.dia_semana === todayLetter);
-  const plannedToday = todayMatrix.reduce((s, e) => s + (e.total_sesiones || 0), 0);
-  const completedToday = todayMatrix.reduce((s, e) => s + (e.sesiones_completadas ?? e.total_sesiones ?? 0), 0);
+  // ---- Today's ring (sessions logged today vs daily session targets) ----
+  const todaySessions = sessionsData.filter((s) => (s.session_date ?? '').slice(0, 10) === todayStr);
+  const todayActivityIds = new Set(todaySessions.map((s) => s.activity_id));
+  const completedToday = todaySessions.length;
+  const dailyTarget = activitiesData.reduce((s, a) => s + (a.maximo_sesiones_diarias ?? 0), 0);
+  const plannedToday = dailyTarget > 0 ? Math.max(dailyTarget, completedToday) : completedToday;
   const todayRingPct = plannedToday > 0 ? Math.round((completedToday / plannedToday) * 100) : 0;
   const pendingToday = Math.max(plannedToday - completedToday, 0);
 
@@ -137,35 +185,35 @@ GRANT SELECT ON activity_habit_matrix TO authenticated;`}</pre>
   const weekMax = Math.max(...weeklyBars.map((b) => b.minutes), 1);
   const weekTotal = weeklyBars.reduce((s, b) => s + b.minutes, 0);
 
-  // ---- Weekly compliance + global stats ----
-  const totalsByDay = new Map<string, number>();
-  const completionsByDay = new Map<string, number>();
-  matrixData.forEach((entry) => {
-    totalsByDay.set(entry.dia_semana, (totalsByDay.get(entry.dia_semana) || 0) + (entry.total_sesiones || 0));
-    completionsByDay.set(entry.dia_semana, (completionsByDay.get(entry.dia_semana) || 0) + (entry.sesiones_completadas ?? entry.total_sesiones ?? 0));
-  });
-  const totalSessionsThisWeek = Array.from(totalsByDay.values()).reduce((a, b) => a + b, 0);
-  const completedSessionsThisWeek = Array.from(completionsByDay.values()).reduce((a, b) => a + b, 0);
-  const weeklyCompliance = calculateWeeklyCompliance(completedSessionsThisWeek, totalSessionsThisWeek);
+  // ---- Weekly compliance: focus minutes this week vs sum of active habit targets ----
+  const weeklyTargetMinutes = habitsData
+    .filter((h) => h.is_active)
+    .reduce((s, h) => s + (h.target_minutes_per_week ?? 0), 0);
+  const weeklyCompliance = calculateWeeklyCompliance(weekTotal, weeklyTargetMinutes);
 
   // ---- Today's habit list (name + streak + done) ----
-  const todayHabits = [...progressData]
-    .filter((p) => p.actividad_nombre && p.actividad_nombre.trim())
-    .map((p) => ({
-      name: p.actividad_nombre,
-      streak: p.current_streak ?? 0,
-      done: namesCompletedToday.has(p.actividad_nombre),
-    }))
+  const todayHabits = habitsData
+    .filter((h) => h.is_active && h.name?.trim())
+    .map((h) => {
+      const linkedActivityIds = linksData.filter((l) => l.habit_id === h.id).map((l) => l.activity_id);
+      const habitDays = new Set<string>();
+      linkedActivityIds.forEach((aid) => daysByActivity.get(aid)?.forEach((d) => habitDays.add(d)));
+      return {
+        name: h.name,
+        streak: currentStreakFromDays(habitDays),
+        done: linkedActivityIds.some((aid) => todayActivityIds.has(aid)),
+      };
+    })
     .sort((a, b) => Number(a.done) - Number(b.done) || b.streak - a.streak)
     .slice(0, 6);
 
-  // ---- Distribution chart (top activities) ----
-  const topActivities = [...uniqueProgress].sort((a, b) => b.completed_sessions - a.completed_sessions).slice(0, 3);
+  // ---- Distribution chart (share of focus time by activity) ----
+  const topActivities = activityStats.slice(0, 3);
   const topChartData = {
-    labels: topActivities.map((a) => a.actividad_nombre),
-    values: topActivities.map((a) => a.completed_sessions),
+    labels: topActivities.map((a) => a.name),
+    values: topActivities.map((a) => a.sharePct),
   };
-  const chartColors = uniqueProgress.map((_, i) => {
+  const chartColors = activityStats.map((_, i) => {
     const palette = ['var(--color-accent)', 'var(--color-success)', 'var(--color-warning)', 'var(--color-info)', 'var(--color-danger)'];
     return palette[i % palette.length];
   });
@@ -370,14 +418,14 @@ GRANT SELECT ON activity_habit_matrix TO authenticated;`}</pre>
           {topActivities.length > 0 ? (
             <div className="space-y-3">
               {topActivities.map((activity, index) => {
-                const percentage = activity.total_sessions > 0 ? Math.round((activity.completed_sessions / activity.total_sessions) * 100) : 0;
+                const percentage = activity.sharePct;
                 const barColor = getBarColor(percentage);
                 const medal = ['🥇', '🥈', '🥉'][index];
                 return (
-                  <div key={activity.actividad_nombre ?? String(index)} className="space-y-1.5">
+                  <div key={activity.name ?? String(index)} className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-[13px] font-medium flex items-center gap-2"><span className="text-base">{medal}</span>{activity.actividad_nombre}</span>
-                      <span className="text-[13px] font-bold" style={{ color: barColor }}>{percentage}%</span>
+                      <span className="text-[13px] font-medium flex items-center gap-2"><span className="text-base">{medal}</span>{activity.name}</span>
+                      <span className="text-[13px] font-bold" style={{ color: barColor }}>{formatDuration(activity.minutes)} · {percentage}%</span>
                     </div>
                     <div className="w-full bg-[var(--color-border)] rounded-full h-2 overflow-hidden">
                       <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(percentage, 100)}%`, backgroundColor: barColor }} />
@@ -397,28 +445,36 @@ GRANT SELECT ON activity_habit_matrix TO authenticated;`}</pre>
           <>
             {activeTab === 'progreso' && (
               <div className="space-y-3 stagger-enter">
-                {uniqueProgress.map((item, index) => {
-                  const percentage = item.total_sessions > 0 ? Math.round((item.completed_sessions / item.total_sessions) * 100) : 0;
-                  const categorization = categorizeCompletion(percentage);
-                  const barColor = getBarColor(percentage);
-                  return (
-                    <Card key={`${item.actividad_nombre}-${index}`} variant="interactive" className="p-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-semibold truncate">{item.actividad_nombre}</h3>
-                          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{categorization.status} · {categorization.message}</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-bold" style={{ color: barColor }}>{categorization.icon} {percentage}%</span>
-                          <div className="flex-1 bg-[var(--color-border)] rounded-full h-2 overflow-hidden min-w-[80px]">
-                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(percentage, 100)}%`, backgroundColor: barColor }} />
+                {activityStats.length > 0 ? (
+                  activityStats.map((item, index) => {
+                    const percentage = item.sharePct;
+                    const barColor = getBarColor(percentage);
+                    return (
+                      <Card key={`${item.name}-${index}`} variant="interactive" className="p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-semibold truncate">{item.name}</h3>
+                            <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{item.sessions} {item.sessions === 1 ? 'sesión' : 'sesiones'} · {item.avg} min promedio</p>
                           </div>
-                          <span className="text-xs text-[var(--color-text-muted)] whitespace-nowrap font-[var(--font-mono)]">{item.completed_sessions}/{item.total_sessions}</span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-bold" style={{ color: barColor }}>{percentage}%</span>
+                            <div className="flex-1 bg-[var(--color-border)] rounded-full h-2 overflow-hidden min-w-[80px]">
+                              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(percentage, 100)}%`, backgroundColor: barColor }} />
+                            </div>
+                            <span className="text-xs text-[var(--color-text-muted)] whitespace-nowrap font-[var(--font-mono)]">{formatDuration(item.minutes)}</span>
+                          </div>
                         </div>
-                      </div>
-                    </Card>
-                  );
-                })}
+                      </Card>
+                    );
+                  })
+                ) : (
+                  <Card className="p-12 text-center">
+                    <div className="w-12 h-12 rounded-[var(--radius-lg)] bg-[var(--color-accent-soft)] flex items-center justify-center mx-auto mb-3">
+                      <Target size={24} className="text-[var(--color-accent)]" />
+                    </div>
+                    <p className="text-sm text-[var(--color-text-muted)]">Registra sesiones para ver tu progreso por actividad</p>
+                  </Card>
+                )}
               </div>
             )}
 

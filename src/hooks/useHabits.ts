@@ -106,5 +106,28 @@ export function useHabits(userId: string | undefined) {
     enabled: !!userId,
   });
 
-  return { list, progress, create, update, remove, metricsBatch };
+  // All habit↔activity links for the user's habits — used to map sessions
+  // (logged against activities) back to the habit they belong to.
+  const links = useQuery({
+    queryKey: ['habit-activity-links', userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data: habits, error: habitsError } = await supabase
+        .from('habits')
+        .select('id')
+        .eq('user_id', userId);
+      if (habitsError) throw habitsError;
+      if (!habits?.length) return [];
+      const ids = habits.map((h) => h.id);
+      const { data, error } = await supabase
+        .from('habit_activities')
+        .select('habit_id, activity_id')
+        .in('habit_id', ids);
+      if (error) throw error;
+      return (data as { habit_id: string; activity_id: string }[]) ?? [];
+    },
+    enabled: !!userId,
+  });
+
+  return { list, progress, create, update, remove, metricsBatch, links };
 }

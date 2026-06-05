@@ -1,69 +1,89 @@
 import { Card } from '@/components/ui/Card';
-import type { ActivityHabitMatrix } from '@/types';
+
+export interface MatrixRow {
+  name: string;
+  days: number[]; // sessions per weekday, Mon→Sun (length 7)
+  minutes: number[]; // minutes per weekday, Mon→Sun (length 7)
+  total: number; // total sessions
+  totalMin: number; // total minutes
+}
 
 interface Props {
-  data: ActivityHabitMatrix[];
+  rows: MatrixRow[];
   weekDays: string[];
 }
 
-export function ActivityMatrix({ data }: Props) {
-  const byActivity = data.reduce<Record<string, { sesiones: number; minutos: number }>>(
-    (acc, entry) => {
-      const key = entry.actividad_nombre;
-      if (!acc[key]) acc[key] = { sesiones: 0, minutos: 0 };
-      acc[key].sesiones += entry.total_sesiones || 0;
-      acc[key].minutos += entry.total_minutos || 0;
-      return acc;
-    },
-    {}
-  );
-
-  const rows = Object.entries(byActivity).sort((a, b) => b[1].sesiones - a[1].sesiones);
-  const maxSesiones = Math.max(...rows.map(([, s]) => s.sesiones), 1);
+export function ActivityMatrix({ rows, weekDays }: Props) {
+  const maxCell = Math.max(1, ...rows.flatMap((r) => r.days));
+  const todayCol = (new Date().getDay() + 6) % 7; // Mon→Sun column for today
 
   return (
     <Card className="p-4 overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full text-sm border-separate border-spacing-1">
         <thead>
-          <tr className="border-b border-[var(--color-border)]">
-            <th className="text-left py-2 pr-6 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+          <tr>
+            <th className="text-left py-2 pr-4 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
               Actividad
             </th>
-            <th className="text-left py-2 pr-4 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
-              Progreso
-            </th>
-            <th className="text-right py-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
-              Sesiones
-            </th>
+            {weekDays.map((d, i) => (
+              <th
+                key={`${d}-${i}`}
+                className={`w-9 text-center text-[11px] font-semibold uppercase ${
+                  i === todayCol ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)]'
+                }`}
+              >
+                {d}
+              </th>
+            ))}
             <th className="text-right py-2 pl-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
-              Minutos
+              Total
             </th>
           </tr>
         </thead>
         <tbody>
-          {rows.map(([name, stats]) => (
-            <tr key={name} className="border-b border-[var(--color-border)]/40">
-              <td className="py-3 pr-6 font-medium text-sm">{name}</td>
-              <td className="py-3 pr-4 w-40">
-                <div className="h-1.5 rounded-full bg-[var(--color-border)]">
-                  <div
-                    className="h-full rounded-full bg-[var(--color-accent)] transition-all"
-                    style={{ width: `${(stats.sesiones / maxSesiones) * 100}%` }}
-                  />
-                </div>
+          {rows.map((row) => (
+            <tr key={row.name}>
+              <td className="py-1 pr-4 font-medium text-sm whitespace-nowrap max-w-[160px] truncate">
+                {row.name}
               </td>
-              <td className="py-3 px-3 text-right">
+              {row.days.map((count, i) => {
+                const ratio = count / maxCell;
+                const isHot = ratio > 0.5;
+                return (
+                  <td key={i} className="p-0.5">
+                    <div
+                      title={
+                        count > 0
+                          ? `${weekDays[i]}: ${count} ${count === 1 ? 'sesión' : 'sesiones'} · ${row.minutes[i]} min`
+                          : `${weekDays[i]}: sin sesiones`
+                      }
+                      className="h-8 w-9 mx-auto rounded-[var(--radius-sm)] grid place-items-center text-[11px] font-semibold font-[var(--font-mono)]"
+                      style={
+                        count > 0
+                          ? {
+                              backgroundColor: `rgba(224, 101, 59, ${(0.15 + 0.85 * ratio).toFixed(2)})`,
+                              color: isHot ? 'white' : 'var(--color-accent)',
+                            }
+                          : { backgroundColor: 'var(--color-border)', opacity: 0.35 }
+                      }
+                    >
+                      {count > 0 ? count : ''}
+                    </div>
+                  </td>
+                );
+              })}
+              <td className="py-1 pl-3 text-right">
                 <span className="inline-flex items-center justify-center min-w-[28px] px-2 py-0.5 rounded-full text-xs font-semibold bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
-                  {stats.sesiones}
+                  {row.total}
                 </span>
-              </td>
-              <td className="py-3 pl-3 text-right text-[var(--color-text-muted)] text-xs">
-                {stats.minutos}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+      <p className="text-[11px] text-[var(--color-text-muted)] mt-3">
+        Cada celda cuenta las sesiones que registraste en ese día de la semana. Más intenso = más sesiones.
+      </p>
     </Card>
   );
 }

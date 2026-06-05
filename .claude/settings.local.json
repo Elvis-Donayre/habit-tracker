@@ -14,7 +14,8 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Usuario\\\\Documents\\\\Proyectos Python\\\\habit-tracker-webv2\" -Recurse -Force)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Usuario\\\\Documents\\\\Proyectos Python\\\\habit-tracker-webv2\\\\src\\\\components\" -Recurse)",
       "Bash(Select-Object Name, FullName)",
-      "PowerShell(pnpm astro *)"
+      "PowerShell(pnpm astro *)",
+      "Read(//c/Users/Usuario/AppData/Local/Temp/claude/C--Users-Usuario-Documents-Proyectos-Python-habit-tracker-webv2/d656e210-ce7d-4d54-bc89-076985a44302/tasks/**)"
     ]
   }
 }
