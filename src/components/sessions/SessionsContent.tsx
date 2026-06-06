@@ -194,7 +194,7 @@ function NewSessionForm({ userId }: { userId: string }) {
                 onChange={(e) => setDuration(Number(e.target.value))}
                 min={1}
                 max={480}
-                step={5}
+                step={1}
                 className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] font-[var(--font-mono)]"
               />
             </div>
