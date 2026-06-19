@@ -106,6 +106,17 @@ export interface Book {
   created_at: string;
 }
 
+export interface BookReading {
+  id: string;
+  book_id: string;
+  user_id: string;
+  round_number: number;
+  started_at: string;          // 'YYYY-MM-DD'
+  finished_at: string | null;  // 'YYYY-MM-DD' | null (null = en curso)
+  rating: number | null;       // 1-5
+  created_at: string;
+}
+
 export interface HabitMetrics {
   habit_id: string;
   total_minutes_invested: number;
